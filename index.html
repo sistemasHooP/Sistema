@@ -18,7 +18,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .tab-active { background-color: #2563eb; color: white; }
         
-        /* Loading Overlay */
         #loadingOverlay { z-index: 60; }
         .loader {
             border: 4px solid #f3f3f3;
@@ -33,7 +32,7 @@
         input[type="month"] { position: relative; }
         input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(1); }
 
-        /* Toast Notification */
+        /* Toast */
         #toast {
             visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
             text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 80;
@@ -64,7 +63,7 @@
 </head>
 <body class="text-gray-800 h-screen flex flex-col md:flex-row overflow-hidden">
 
-    <!-- TELA DE LOGIN -->
+    <!-- LOGIN -->
     <div id="login-screen">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
             <div class="text-center mb-6">
@@ -87,16 +86,16 @@
         </div>
     </div>
 
-    <!-- TOAST DE NOTIFICAÇÃO -->
+    <!-- TOAST -->
     <div id="toast"><i class="fas fa-check-circle mr-2"></i><span id="toast-msg">Mensagem</span></div>
     
-    <!-- LOADING OVERLAY -->
+    <!-- LOADING -->
     <div id="loadingOverlay" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center hidden backdrop-blur-sm">
         <div class="loader mb-4"></div>
         <p class="text-blue-600 font-bold text-lg animate-pulse">Processando...</p>
     </div>
 
-    <!-- MODAL CONFIRMAÇÃO PERSONALIZADO -->
+    <!-- CONFIRM -->
     <div id="modal-confirm" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border-t-4 border-blue-600">
             <div class="text-center">
@@ -121,53 +120,26 @@
                 <button onclick="logout()" class="text-xs text-blue-200 hover:text-white" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
             </div>
             <p class="text-xs text-blue-200 mb-4" id="user-display">Usuário: ...</p>
-            
             <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência (Mês/Ano)</label>
             <div class="relative">
                 <input type="month" id="inputCompetencia" onchange="mudarCompetencia(this.value)" 
                        class="w-full p-3 bg-blue-700 border border-blue-600 rounded text-white font-bold text-center focus:outline-none focus:border-white shadow-inner cursor-pointer hover:bg-blue-600 transition-colors">
             </div>
-            <p class="text-[10px] text-center mt-2 text-blue-300">Selecione para mudar o mês</p>
         </div>
-
         <nav class="flex-1 overflow-y-auto py-4">
-            <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active">
-                <i class="fas fa-chart-pie w-6"></i> Resumo
-            </button>
-            <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center">
-                <i class="fas fa-check-double w-6"></i> Conferência Pagtos
-            </button>
-            
+            <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active"><i class="fas fa-chart-pie w-6"></i> Resumo</button>
+            <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center"><i class="fas fa-check-double w-6"></i> Conferência</button>
             <div class="border-t border-gray-100 my-2"></div>
-            <button onclick="showView('pendencias')" id="btn-pendencias" class="nav-btn w-full text-left px-6 py-3 bg-red-50 text-red-700 font-bold border-l-4 border-red-500 hover:bg-red-100 transition-colors flex items-center">
-                <i class="fas fa-exclamation-circle w-6"></i> Pendências
-            </button>
-            <button onclick="showView('guias')" id="btn-guias" class="nav-btn w-full text-left px-6 py-3 hover:bg-purple-50 text-purple-800 font-medium transition-colors flex items-center">
-                <i class="fas fa-landmark w-6"></i> Recolhimento Guias
-            </button>
-
-            <!-- CADASTROS -->
+            <button onclick="showView('pendencias')" id="btn-pendencias" class="nav-btn w-full text-left px-6 py-3 bg-red-50 text-red-700 font-bold border-l-4 border-red-500 hover:bg-red-100 transition-colors flex items-center"><i class="fas fa-exclamation-circle w-6"></i> Pendências</button>
+            <button onclick="showView('guias')" id="btn-guias" class="nav-btn w-full text-left px-6 py-3 hover:bg-purple-50 text-purple-800 font-medium transition-colors flex items-center"><i class="fas fa-landmark w-6"></i> Recolhimento Guias</button>
             <div class="border-t border-gray-100 my-2"></div>
-            <button onclick="showView('folha')" id="btn-folha" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-users w-6"></i> Folha Pagamento
-            </button>
-            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-gift w-6"></i> 13º Salário
-            </button>
-            <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-exchange-alt w-6"></i> Outros Bancos
-            </button>
-            <button onclick="showView('consignados')" id="btn-consignados" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-hand-holding-usd w-6"></i> Consignados
-            </button>
-            <button onclick="showView('adm')" id="btn-adm" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-file-contract w-6"></i> Assessorias e Desp.
-            </button>
-            
+            <button onclick="showView('folha')" id="btn-folha" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-users w-6"></i> Folha Pagamento</button>
+            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-gift w-6"></i> 13º Salário</button>
+            <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-exchange-alt w-6"></i> Outros Bancos</button>
+            <button onclick="showView('consignados')" id="btn-consignados" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-hand-holding-usd w-6"></i> Consignados</button>
+            <button onclick="showView('adm')" id="btn-adm" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-file-contract w-6"></i> Assessorias</button>
             <div class="border-t border-gray-100 my-2"></div>
-            <button onclick="showView('imposto')" id="btn-imposto" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-file-invoice-dollar w-6"></i> Imposto de Renda
-            </button>
+            <button onclick="showView('imposto')" id="btn-imposto" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center"><i class="fas fa-file-invoice-dollar w-6"></i> Imposto de Renda</button>
         </nav>
     </aside>
 
@@ -178,324 +150,100 @@
             <span id="mobile-comp" class="text-sm font-bold bg-blue-700 px-2 py-1 rounded">--/----</span>
         </header>
 
-        <!-- CONTEÚDO SCROLLÁVEL -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8" id="mainContent">
             
-            <!-- VIEW: RESUMO -->
+            <!-- RESUMO -->
             <div id="view-resumo" class="view-section">
                 <div class="flex justify-between items-end mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
-                        <p class="text-sm text-gray-500">Competência <span class="current-comp font-bold text-blue-600">--/----</span></p>
-                    </div>
-                    <button onclick="carregarResumo()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
+                    <div><h2 class="text-2xl font-bold text-gray-800">Dashboard</h2><p class="text-sm text-gray-500">Competência <span class="current-comp font-bold text-blue-600">--/----</span></p></div>
+                    <button onclick="carregarResumo(true)" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
-                
-                <!-- GRID DE CARDS REORGANIZADO -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    
-                    <!-- Folha Líquida (Destaque) -->
                     <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-600 lg:col-span-2 relative overflow-hidden">
                         <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-users text-6xl text-blue-600"></i></div>
                         <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Líquida (Total)</p>
                         <h3 class="text-4xl font-bold text-gray-800 mt-2" id="dash-total-folha">R$ 0,00</h3>
-                        <div class="mt-4 flex items-center text-sm text-blue-600 bg-blue-50 w-fit px-3 py-1 rounded-full">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span id="dash-sub-folha">Carregando...</span>
-                        </div>
+                        <div class="mt-4 flex items-center text-sm text-blue-600 bg-blue-50 w-fit px-3 py-1 rounded-full"><i class="fas fa-info-circle mr-2"></i><span id="dash-sub-folha">Normal + 13º</span></div>
                     </div>
-
-                    <!-- Bradesco Estimado -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
                         <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Líquido Bradesco (Est.)</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-bradesco">R$ 0,00</h3>
-                                <p class="text-[10px] text-gray-400 mt-1 font-semibold">(Folha Líquida - Outros Bancos)</p>
-                            </div>
+                            <div><p class="text-xs text-gray-500 uppercase font-bold">Líquido Bradesco (Est.)</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-bradesco">R$ 0,00</h3><p class="text-[10px] text-gray-400 mt-1 font-semibold">(Folha Líquida - Outros Bancos)</p></div>
                             <div class="text-green-500"><i class="fas fa-money-check-alt text-2xl"></i></div>
                         </div>
                     </div>
-
-                    <!-- Outros Bancos -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
-                        <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Outros Bancos</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
-                            </div>
-                            <div class="text-orange-500"><i class="fas fa-university text-2xl"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Consignados -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                        <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Consignados</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3>
-                            </div>
-                            <div class="text-purple-500"><i class="fas fa-hand-holding-usd text-2xl"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Assessorias -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
-                        <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Assessorias e Desp.</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-adm">R$ 0,00</h3>
-                            </div>
-                            <div class="text-indigo-500"><i class="fas fa-file-invoice-dollar text-2xl"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Imposto de Renda -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-gray-600">
-                        <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Imposto de Renda</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-imposto">R$ 0,00</h3>
-                            </div>
-                            <div class="text-gray-500"><i class="fas fa-landmark text-2xl"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Recolhimento Guias -->
+                    <!-- Mais Cards -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500"><p class="text-xs text-gray-500 uppercase font-bold">Outros Bancos</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500"><p class="text-xs text-gray-500 uppercase font-bold">Consignados</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500"><p class="text-xs text-gray-500 uppercase font-bold">Assessorias e Desp.</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-adm">R$ 0,00</h3></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-gray-600"><p class="text-xs text-gray-500 uppercase font-bold">Imposto de Renda</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-imposto">R$ 0,00</h3></div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-800">
                         <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Recolhimento Guias</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-recolhimento-pago">R$ 0,00</h3>
-                                <p class="text-xs text-gray-400 mt-1">De: <span id="dash-recolhimento-devido">R$ 0,00</span> (Devido)</p>
-                            </div>
+                            <div><p class="text-xs text-gray-500 uppercase font-bold">Recolhimento Guias</p><h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-recolhimento-pago">R$ 0,00</h3><p class="text-xs text-gray-400 mt-1">De: <span id="dash-recolhimento-devido">R$ 0,00</span> (Devido)</p></div>
                             <div class="text-purple-800"><i class="fas fa-landmark text-2xl"></i></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Conferência -->
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
                     <h3 class="font-bold text-lg mb-4 text-gray-800">Conferência da Folha</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <tbody class="divide-y divide-gray-100">
-                                <tr>
-                                    <td class="px-4 py-3 font-medium">Total (Folha + 13º)</td>
-                                    <td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-3">(-) Outros Bancos</td>
-                                    <td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td>
-                                </tr>
-                                <tr class="bg-green-50">
-                                    <td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td>
-                                    <td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody class="divide-y divide-gray-100">
+                        <tr><td class="px-4 py-3 font-medium">Total (Folha + 13º)</td><td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td></tr>
+                        <tr><td class="px-4 py-3">(-) Outros Bancos</td><td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td></tr>
+                        <tr class="bg-green-50"><td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td><td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td></tr>
+                    </tbody></table></div>
                 </div>
             </div>
 
-            <!-- VIEW: CONFERÊNCIA PAGAMENTOS -->
+            <!-- CONFERÊNCIA -->
             <div id="view-conferencia" class="view-section hidden-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência de Pagamentos</h2>
-                    <button onclick="carregarConferencia()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
-                </div>
-                <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 text-sm text-green-800">
-                    <i class="fas fa-info-circle mr-2"></i> Marque o que já foi pago. Itens desligados constarão como <strong>Pendentes</strong>.
-                </div>
-                <div id="conferencia-container" class="space-y-6"></div>
-                <div id="empty-conferencia" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhum lançamento neste mês.</div>
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência</h2><button onclick="carregarConferencia(true)" class="text-sm text-blue-600 hover:underline">Atualizar</button></div>
+                <div id="conferencia-container" class="space-y-6"></div><div id="empty-conferencia" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhum lançamento.</div>
             </div>
 
-            <!-- VIEW: PENDÊNCIAS ORGANIZADA -->
+            <!-- PENDÊNCIAS -->
             <div id="view-pendencias" class="view-section hidden-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>Pendências em Aberto</h2>
-                    <button onclick="carregarPendencias()" class="text-sm text-gray-600 hover:text-gray-900"><i class="fas fa-sync mr-1"></i>Atualizar</button>
-                </div>
-                
-                <div id="pendencias-container" class="space-y-6">
-                    <!-- JS vai inserir os grupos aqui -->
-                </div>
-                <div id="empty-pendencias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma pendência encontrada! 🎉</div>
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>Pendências</h2><button onclick="carregarPendencias(true)" class="text-sm text-gray-600 hover:text-gray-900">Atualizar</button></div>
+                <div id="pendencias-container" class="space-y-6"></div><div id="empty-pendencias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma pendência! 🎉</div>
             </div>
 
-            <!-- VIEW: RECOLHIMENTO GUIAS -->
+            <!-- GUIAS -->
             <div id="view-guias" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-purple-800"><i class="fas fa-landmark mr-2"></i>Recolhimento de Guias</h2>
-                        <p class="text-xs text-gray-500">Controle de repasses da Prefeitura</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="abrirModal('modal-config-guia', 'adicionarTipoGuia')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm"><i class="fas fa-cog"></i> Configurar Tipos</button>
-                        <button onclick="carregarTiposParaSelect(); abrirModal('modal-guia', 'adicionarGuiaObrigacao')" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"><i class="fas fa-plus"></i> Nova Guia</button>
-                    </div>
+                    <div><h2 class="text-2xl font-bold text-purple-800"><i class="fas fa-landmark mr-2"></i>Recolhimento Guias</h2></div>
+                    <div class="flex gap-2"><button onclick="abrirModal('modal-config-guia', 'adicionarTipoGuia')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Configurar</button><button onclick="carregarTiposParaSelect(); abrirModal('modal-guia', 'adicionarGuiaObrigacao')" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700">Nova Guia</button></div>
                 </div>
-                
-                <div id="container-guias" class="space-y-6">
-                    <!-- Cards de Guias serão inseridos aqui via JS -->
-                </div>
-                <div id="empty-guias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma guia lançada nesta competência.</div>
+                <div id="container-guias" class="space-y-6"></div><div id="empty-guias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma guia lançada.</div>
             </div>
 
-            <!-- VIEW: IMPOSTO DE RENDA -->
+            <!-- IMPOSTO -->
             <div id="view-imposto" class="view-section hidden-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Imposto de Renda (Retido)</h2>
-                    <button onclick="abrirModal('modal-imposto', 'adicionarImpostoRenda')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Lançar IR</button>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-600 text-white uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Origem</th>
-                                <th class="px-6 py-3">Descrição</th>
-                                <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3">Obs</th>
-                                <th class="px-6 py-3 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-imposto" class="divide-y divide-gray-100"></tbody>
-                    </table>
-                    <div id="empty-imposto" class="p-8 text-center text-gray-500 hidden">Nenhum lançamento.</div>
-                </div>
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Imposto de Renda</h2><button onclick="abrirModal('modal-imposto', 'adicionarImpostoRenda')" class="bg-blue-600 text-white px-4 py-2 rounded shadow">Lançar IR</button></div>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-600 text-white uppercase text-xs"><tr><th class="px-6 py-3">Origem</th><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-imposto" class="divide-y divide-gray-100"></tbody></table><div id="empty-imposto" class="p-8 text-center text-gray-500 hidden">Vazio</div></div>
             </div>
 
-            <!-- DEMAIS VIEWS (CADASTROS) -->
+            <!-- CADASTROS BÁSICOS -->
             <div id="view-folha" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Folha</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-folha"></tbody></table><div id="empty-folha" class="p-4 text-center hidden">Vazio</div></div></div>
             <div id="view-decimo" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-800">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden border border-blue-100"><table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-outros" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm"><i class="fas fa-copy"></i> Copiar Mês Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div></div></div>
+            <div id="view-outros" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div></div></div>
             <div id="view-consignados" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-consignados"></tbody></table><div id="empty-consignados" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-adm" class="view-section hidden-section"><div class="mb-8"><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm"><i class="fas fa-copy"></i> Copiar Mês Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs shadow"><i class="fas fa-plus mr-1"></i> Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes"></tbody></table><div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div></div></div><div><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais"></tbody></table><div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div></div></div></div>
+            <div id="view-adm" class="view-section hidden-section"><div class="mb-8"><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Assessorias</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-green-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes"></tbody></table><div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div></div></div><div><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais"></tbody></table><div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div></div></div></div>
         </div>
     </main>
 
     <!-- MODAIS -->
-
-    <!-- Modal Imposto (NOVO) -->
-    <div id="modal-imposto" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Lançar Imposto de Renda</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarImpostoRenda"><input type="hidden" name="sheetKey" value="IMPOSTO"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Origem</label><select name="tipo" class="w-full border p-2 rounded"><option>Folha Pagamento</option><option>Nota Fiscal</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição (Opcional)</label><input name="descricao" class="w-full border p-2 rounded" placeholder="Ex: NF 123 - Empresa X"></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor Retido</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-imposto')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
-
-    <!-- Modais Existentes -->
+    <!-- Config Guia -->
+    <div id="modal-config-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6"><h3 class="font-bold text-lg mb-4">Novo Tipo</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarTipoGuia"><input type="hidden" name="sheetKey" value="CONFIG_GUIAS"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Nome</label><input name="nome" class="w-full border p-2 rounded uppercase" required></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-config-guia')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button></div></form></div></div>
+    <!-- Guia -->
+    <div id="modal-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-purple-600"><h3 class="font-bold text-lg mb-4 text-purple-800">Lançar Guia</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarGuiaObrigacao"><input type="hidden" name="sheetKey" value="GUIAS"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" id="select-tipo-guia" class="w-full border p-2 rounded" required></select></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label class="text-xs font-bold text-gray-500">Principal</label><input name="valorPrincipal" class="money-mask w-full border p-2 rounded"></div><div><label class="text-xs font-bold text-gray-500">Décimo</label><input name="valorDecimo" class="money-mask w-full border p-2 rounded"></div></div><div id="extra-fields-guia" class="hidden grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-2 rounded"><div><label class="text-xs font-bold text-gray-500">Segurado</label><input name="valorSegurado" class="money-mask w-full border p-2 rounded"></div><div><label class="text-xs font-bold text-gray-500">Patronal</label><input name="valorPatronal" class="money-mask w-full border p-2 rounded"></div></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-guia')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button></div></form></div></div>
+    <!-- Pagamento Guia -->
+    <div id="modal-pagamento-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6"><h3 class="font-bold text-lg mb-4 text-green-700">Baixar</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="action_type" value="adicionarPagamentoGuia"><input type="hidden" name="idGuia" id="input-id-guia-ref"><input type="hidden" name="id"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Data</label><input type="date" name="dataPagto" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valorPago" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded" placeholder="Comprovante"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-pagamento-guia')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Baixar</button></div></form></div></div>
+    <!-- Outros Modais -->
+    <div id="modal-imposto" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Lançar IR</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarImpostoRenda"><input type="hidden" name="sheetKey" value="IMPOSTO"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Origem</label><select name="tipo" class="w-full border p-2 rounded"><option>Folha Pagamento</option><option>Nota Fiscal</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded"></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-imposto')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
     <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Folha</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor" required><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-    
     <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600"><h3 class="font-bold text-lg mb-4 text-blue-800">13º</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor" required><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-    
     <div id="modal-outros" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Outros</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutrosBancos"><input type="hidden" name="sheetKey" value="OUTROS_BANCOS"><input name="nome" class="w-full border p-2 mb-2" placeholder="Nome"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select><input name="banco" class="w-full border p-2 mb-2" placeholder="Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-    
     <div id="modal-consignados" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Consignado</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarConsignado"><input type="hidden" name="sheetKey" value="CONSIGNADOS"><input name="tipo" class="w-full border p-2 mb-2" placeholder="Tipo/Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-    
     <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Assessoria</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarRecorrente"><input type="hidden" name="sheetKey" value="RECORRENTES"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><select name="tipo" class="w-full border p-2 mb-2"><option>Assessoria</option><option>Serviço</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-    
     <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Eventual</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutroPagamento"><input type="hidden" name="sheetKey" value="OUTROS_PGTOS"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
-
-    <!-- MODAIS DE GUIA (NOVOS) -->
-    <!-- Configurar Tipos -->
-    <div id="modal-config-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
-            <h3 class="font-bold text-lg mb-4">Novo Tipo de Guia</h3>
-            <form onsubmit="handleSubmit(event)">
-                <input type="hidden" name="id">
-                <input type="hidden" name="action_type" value="adicionarTipoGuia">
-                <input type="hidden" name="sheetKey" value="CONFIG_GUIAS">
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Nome da Guia</label>
-                    <input name="nome" class="w-full border p-2 rounded uppercase" placeholder="Ex: IPSM SAÚDE" required>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-config-guia')" class="px-4 py-2 text-gray-600">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Lançar Obrigação (Guia) -->
-    <div id="modal-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-purple-600">
-            <h3 class="font-bold text-lg mb-4 text-purple-800">Lançar Guia (Obrigação)</h3>
-            <form onsubmit="handleSubmit(event)">
-                <input type="hidden" name="id">
-                <input type="hidden" name="action_type" value="adicionarGuiaObrigacao">
-                <input type="hidden" name="sheetKey" value="GUIAS">
-                
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Tipo de Guia</label>
-                    <select name="tipo" id="select-tipo-guia" class="w-full border p-2 rounded" required>
-                        <!-- Preenchido via JS -->
-                    </select>
-                </div>
-                
-                <!-- Valores Flexíveis -->
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-xs font-bold text-gray-500">Valor Principal</label>
-                        <input name="valorPrincipal" class="money-mask w-full border p-2 rounded">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500">Valor Décimo</label>
-                        <input name="valorDecimo" class="money-mask w-full border p-2 rounded">
-                    </div>
-                </div>
-                
-                <!-- Campos extras para Piso Enfermagem -->
-                <div id="extra-fields-guia" class="hidden grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-2 rounded">
-                    <div>
-                        <label class="text-xs font-bold text-gray-500">Parte Segurado</label>
-                        <input name="valorSegurado" class="money-mask w-full border p-2 rounded">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500">Parte Patronal</label>
-                        <input name="valorPatronal" class="money-mask w-full border p-2 rounded">
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Observação</label>
-                    <input name="obs" class="w-full border p-2 rounded">
-                </div>
-
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-guia')" class="px-4 py-2 text-gray-600">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Lançar Pagamento (Baixa) -->
-    <div id="modal-pagamento-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
-            <h3 class="font-bold text-lg mb-4 text-green-700">Baixar Pagamento</h3>
-            <form onsubmit="handleSubmit(event)">
-                <input type="hidden" name="action_type" value="adicionarPagamentoGuia">
-                <input type="hidden" name="idGuia" id="input-id-guia-ref">
-                <input type="hidden" name="id">
-                
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Data do Pagamento</label>
-                    <input type="date" name="dataPagto" class="w-full border p-2 rounded" required>
-                </div>
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Valor Pago</label>
-                    <input name="valorPago" class="money-mask w-full border p-2 rounded" required>
-                </div>
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Obs (Comprovante/Lote)</label>
-                    <input name="obs" class="w-full border p-2 rounded">
-                </div>
-
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-pagamento-guia')" class="px-4 py-2 text-gray-600">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Baixar</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwt5wH_wT65wfXyaBc78YK4ZBHcCi7zFATSQRk6yytCTHFlqCLs1Gc7JSS395aYNUmR/exec";
@@ -504,17 +252,13 @@
         let currentUser = localStorage.getItem('rpps_user');
         
         let confirmCallback = null;
+        let CACHE = {};
 
-        // --- INICIALIZAÇÃO E LOGIN ---
         window.onload = async function() {
             if(authToken) {
                 const res = await fetch(`${API_URL}?action=verificarToken&token=${authToken}`);
                 const json = await res.json();
-                if(json.status === 'success') {
-                    currentUser = json.usuario;
-                    iniciarSistema();
-                    return;
-                }
+                if(json.status === 'success') { currentUser = json.usuario; iniciarSistema(); return; }
             }
             document.getElementById('login-screen').style.display = 'flex';
         };
@@ -556,12 +300,14 @@
 
         function logout() { if(!confirm("Sair do sistema?")) return; localStorage.removeItem('rpps_token'); location.reload(); }
 
-        // --- SISTEMA ---
         function mudarCompetencia(v) {
             if(!v) return;
             currentCompetencia = `${v.split('-')[1]}/${v.split('-')[0]}`;
             document.querySelectorAll('.current-comp').forEach(e => e.innerText = currentCompetencia);
-            document.querySelector('.nav-btn.tab-active')?.click();
+            document.getElementById('mobile-comp').innerText = currentCompetencia;
+            CACHE = {};
+            const activeBtn = document.querySelector('.nav-btn.tab-active');
+            if(activeBtn) activeBtn.click();
         }
 
         function showView(view) {
@@ -576,87 +322,227 @@
             else if(view === 'imposto') carregarLista('IMPOSTO_RENDA', 'lista-imposto', 'empty-imposto', renderRowImposto);
             else if(view === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
             else if(view === 'consignados') carregarLista('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
-            else if(view === 'adm') {
-                carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente);
-                carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual);
-            }
+            else if(view === 'adm') { carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente); carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual); }
             else if(view === 'pendencias') carregarPendencias();
             else if(view === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
             else if(view === 'guias') carregarGuias();
         }
 
-        // --- LÓGICA DE GUIAS (NOVA) ---
+        // --- FETCH ---
+        async function fetchData(action, params = '') {
+            const cacheKey = `${action}_${currentCompetencia}_${params}`;
+            if (CACHE[cacheKey]) { return CACHE[cacheKey]; }
+            const res = await fetch(`${API_URL}?action=${action}&competencia=${currentCompetencia}&token=${authToken}&${params}`);
+            const json = await res.json();
+            if (json.status === 'success') { CACHE[cacheKey] = json; }
+            return json;
+        }
+        function invalidateCache() { CACHE = {}; }
+
+        // --- CARREGAMENTOS ---
+        async function carregarResumo(force = false) {
+            if(force) invalidateCache();
+            if(!force) setLoading(true); 
+            const cacheKey = `getResumoMensal_${currentCompetencia}_`;
+            if (CACHE[cacheKey]) { renderResumo(CACHE[cacheKey]); setLoading(false); return; }
+            const json = await fetchData('getResumoMensal');
+            renderResumo(json);
+            setLoading(false);
+        }
+        
+        function renderResumo(json) {
+             if(json.status === 'success') {
+                document.getElementById('dash-total-folha').innerText = formatCurrency(json.folha.total_geral);
+                document.getElementById('dash-sub-folha').innerText = `Normal: ${formatCurrency(json.folha.total_normal)} | 13º: ${formatCurrency(json.folha.total_decimo)}`;
+                document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros);
+                document.getElementById('dash-total-imposto').innerText = formatCurrency(json.imposto.total);
+                document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco);
+                document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total);
+                document.getElementById('dash-total-adm').innerText = formatCurrency(json.administrativo.total);
+                document.getElementById('dash-recolhimento-pago').innerText = formatCurrency(json.recolhimento.pago);
+                document.getElementById('dash-recolhimento-devido').innerText = formatCurrency(json.recolhimento.devido);
+                document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
+                document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros);
+                document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco);
+            }
+        }
+
+        async function carregarLista(sheet, tbodyId, emptyId, renderFn, force = false) {
+            if(force) invalidateCache();
+            const cacheKey = `getList_${currentCompetencia}_sheet=${sheet}`;
+            if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn); return; }
+            setLoading(true);
+            const json = await fetchData('getList', `sheet=${sheet}`);
+            renderLista(json, tbodyId, emptyId, renderFn);
+            setLoading(false);
+        }
+        
+        function renderLista(json, tbodyId, emptyId, renderFn) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            if(json.data && json.data.length > 0) {
+                document.getElementById(emptyId).classList.add('hidden');
+                json.data.forEach(r => tbody.innerHTML += renderFn(r));
+            } else { document.getElementById(emptyId).classList.remove('hidden'); }
+        }
+
         async function carregarGuias() {
+            setLoading(true); 
+            const json = await fetchData('getGuiasDetalhadas');
+            const container = document.getElementById('container-guias');
+            const empty = document.getElementById('empty-guias');
+            container.innerHTML = '';
+            if(json.status === 'success' && json.data.length > 0) {
+                empty.classList.add('hidden');
+                json.data.forEach(g => {
+                    const pendente = g.totalDevido - g.totalPago;
+                    const statusColor = pendente <= 0.01 ? 'bg-green-100 border-green-500' : 'bg-white border-purple-200';
+                    const statusText = pendente <= 0.01 ? '<span class="text-green-600 font-bold">QUITADO</span>' : `<span class="text-red-600 font-bold">Resta: ${formatCurrency(pendente)}</span>`;
+                    let pgtosHtml = '';
+                    if(g.pagamentos && g.pagamentos.length > 0) {
+                        pgtosHtml = `<div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500"><p class="font-bold mb-1">Histórico:</p>`;
+                        g.pagamentos.forEach(p => { pgtosHtml += `<div class="flex justify-between"><span>${p.data.split('T')[0]} - ${p.obs}</span> <span>${formatCurrency(p.valor)}</span></div>`; });
+                        pgtosHtml += `</div>`;
+                    }
+                    let detalhes = `Princ: ${formatCurrency(g.vPrincipal)} | 13º: ${formatCurrency(g.vDecimo)}`;
+                    if(g.tipo.includes('ENFERMAGEM')) detalhes = `Seg: ${formatCurrency(g.vSegurado)} | Patr: ${formatCurrency(g.vPatronal)}`;
+                    container.innerHTML += `<div class="rounded-lg border-l-4 shadow-sm p-4 ${statusColor}"><div class="flex justify-between items-start"><div><h3 class="font-bold text-gray-800 text-lg">${g.tipo}</h3><p class="text-xs text-gray-500 font-mono">${detalhes}</p><div class="mt-2 text-sm">Devido: <strong>${formatCurrency(g.totalDevido)}</strong> <span class="mx-2 text-gray-300">|</span> Pago: <strong>${formatCurrency(g.totalPago)}</strong></div></div><div class="text-right">${statusText}<div class="mt-2 flex gap-1 justify-end"><button onclick="abrirModalPagamento('${g.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 shadow"><i class="fas fa-check"></i> Pagar</button><button onclick="editarGuia('${g.id}', '${g.tipo}', '${g.vPrincipal}', '${g.vDecimo}', '${g.vSegurado}', '${g.vPatronal}', '${g.obs}')" class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-200"><i class="fas fa-pencil-alt"></i></button><button onclick="excluir('GUIAS', '${g.id}')" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs hover:bg-red-200"><i class="fas fa-trash"></i></button></div></div></div>${pgtosHtml}</div>`;
+                });
+            } else { empty.classList.remove('hidden'); }
+            setLoading(false);
+        }
+
+        async function carregarConferencia(force = false) {
+            if(force) invalidateCache();
+            const cacheKey = `getConferencia_${currentCompetencia}_`;
+            if (!force && CACHE[cacheKey]) { renderConferencia(CACHE[cacheKey]); return; }
+            setLoading(true);
+            const json = await fetchData('getConferencia');
+            renderConferencia(json);
+            setLoading(false);
+        }
+
+        function renderConferencia(json) {
+            const container = document.getElementById('conferencia-container');
+            const empty = document.getElementById('empty-conferencia');
+            container.innerHTML = '';
+            if(json.status === 'success' && json.data.length > 0) {
+                empty.classList.add('hidden');
+                const grupos = {};
+                json.data.forEach(item => { if(!grupos[item.grupo]) grupos[item.grupo] = []; grupos[item.grupo].push(item); });
+                for (const [nomeGrupo, itens] of Object.entries(grupos)) {
+                    let rows = '';
+                    itens.forEach(item => {
+                        const isPago = item.status === 'Pago';
+                        const switchHtml = `<label class="switch"><input type="checkbox" ${isPago ? 'checked' : ''} onchange="togglePagamento('${item.id}', '${item.origem}', this)"><span class="slider"></span></label><span class="switch-label">${isPago ? 'PAGO' : 'PENDENTE'}</span>`;
+                        rows += `<tr class="hover:bg-gray-50 border-b last:border-0 ${isPago ? 'bg-green-50' : ''}"><td class="px-6 py-4 text-xs font-bold uppercase text-gray-500 w-1/4">${item.origem}</td><td class="px-6 py-4 font-medium ${isPago ? 'text-gray-400 line-through' : 'text-gray-900'} w-1/3">${item.descricao}</td><td class="px-6 py-4 text-right font-bold w-1/4">${formatCurrency(item.valor)}</td><td class="px-6 py-4 text-center flex items-center justify-center">${switchHtml}</td></tr>`;
+                    });
+                    container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100"><div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold text-gray-700">${nomeGrupo}</h3><span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-bold">${itens.length}</span></div><table class="w-full text-sm text-left"><tbody class="divide-y divide-gray-100">${rows}</tbody></table></div>`;
+                }
+            } else { empty.classList.remove('hidden'); }
+        }
+
+        async function carregarPendencias(force=false) {
+             if(force) invalidateCache();
+             const cacheKey = `getPendencias_${currentCompetencia}_`; 
+             if(!force && CACHE['getPendencias_']) { renderPendencias(CACHE['getPendencias_']); return; }
+             setLoading(true);
+             const json = await fetchData('getPendencias'); 
+             CACHE['getPendencias_'] = json; 
+             renderPendencias(json);
+             setLoading(false);
+        }
+
+        function renderPendencias(json) {
+            const container = document.getElementById('pendencias-container');
+            const emptyDiv = document.getElementById('empty-pendencias');
+            container.innerHTML = '';
+            if(json.status === 'success' && json.data.length > 0) {
+                emptyDiv.classList.add('hidden');
+                const grupos = {};
+                json.data.forEach(item => { const grp = item.grupo || 'Geral'; if(!grupos[grp]) grupos[grp] = []; grupos[grp].push(item); });
+                for (const [nomeGrupo, itens] of Object.entries(grupos)) {
+                    let rows = '';
+                    itens.forEach(row => {
+                        let badgeClass = 'bg-red-100 text-red-600'; if(row.status === 'A Receber') badgeClass = 'bg-purple-100 text-purple-600';
+                        rows += `<tr class="hover:bg-red-50 border-b border-red-100 last:border-0"><td class="px-6 py-3 text-sm font-bold text-gray-700 w-1/6">${row.competencia}</td><td class="px-6 py-3 text-xs uppercase text-gray-500 w-1/6">${row.origem}</td><td class="px-6 py-3 text-sm text-gray-800 font-medium w-1/3">${row.descricao}</td><td class="px-6 py-3 text-right font-bold text-gray-800 w-1/6">${formatCurrency(row.valor)}</td><td class="px-6 py-3 text-center w-1/6"><span class="${badgeClass} font-bold text-xs px-2 py-1 rounded">${row.status}</span></td></tr>`;
+                    });
+                    container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-red-100 mb-6"><div class="bg-red-50 px-6 py-3 border-b border-red-100 flex justify-between items-center"><h3 class="font-bold text-red-800 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i>${nomeGrupo}</h3><span class="bg-white text-red-600 text-xs px-2 py-1 rounded-full font-bold border border-red-200">${itens.length} itens</span></div><table class="w-full text-left"><tbody class="divide-y divide-red-50">${rows}</tbody></table></div>`;
+                }
+            } else { emptyDiv.classList.remove('hidden'); }
+        }
+
+        // --- SUBMIT ---
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            data.action = data.id ? 'editarRegistro' : data.action_type;
+            data.competencia = currentCompetencia;
+            data.usuarioLog = currentUser;
+            toggleModal(e.target.closest('div[id^="modal"]').id);
+            invalidateCache();
             setLoading(true);
             try {
-                const res = await fetch(`${API_URL}?action=getGuiasDetalhadas&competencia=${currentCompetencia}&token=${authToken}`);
+                const res = await fetch(API_URL, {method:'POST', body:JSON.stringify(data)});
                 const json = await res.json();
-                const container = document.getElementById('container-guias');
-                const empty = document.getElementById('empty-guias');
-                container.innerHTML = '';
+                showToast(json.status==='success'?'Salvo!':'Erro', json.status);
+                if(data.action_type === 'adicionarGuiaObrigacao' || data.action_type === 'adicionarPagamentoGuia') { carregarGuias(); } 
+                else { document.querySelector('.nav-btn.tab-active').click(); }
+            } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
+        }
 
-                if(json.status === 'success' && json.data.length > 0) {
-                    empty.classList.add('hidden');
-                    json.data.forEach(g => {
-                        const pendente = g.totalDevido - g.totalPago;
-                        const statusColor = pendente <= 0.01 ? 'bg-green-100 border-green-500' : 'bg-white border-purple-200';
-                        const statusText = pendente <= 0.01 ? '<span class="text-green-600 font-bold">QUITADO</span>' : `<span class="text-red-600 font-bold">Resta: ${formatCurrency(pendente)}</span>`;
-                        let pgtosHtml = '';
-                        if(g.pagamentos && g.pagamentos.length > 0) {
-                            pgtosHtml = `<div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500"><p class="font-bold mb-1">Histórico de Pagamentos:</p>`;
-                            g.pagamentos.forEach(p => {
-                                pgtosHtml += `<div class="flex justify-between"><span>${p.data.split('T')[0]} - ${p.obs}</span> <span>${formatCurrency(p.valor)}</span></div>`;
-                            });
-                            pgtosHtml += `</div>`;
-                        }
-                        let detalhesValores = `Princ: ${formatCurrency(g.vPrincipal)} | 13º: ${formatCurrency(g.vDecimo)}`;
-                        if(g.tipo.includes('ENFERMAGEM')) detalhesValores = `Seg: ${formatCurrency(g.vSegurado)} | Patr: ${formatCurrency(g.vPatronal)}`;
-
-                        container.innerHTML += `
-                            <div class="rounded-lg border-l-4 shadow-sm p-4 ${statusColor}">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-gray-800 text-lg">${g.tipo}</h3>
-                                        <p class="text-xs text-gray-500 font-mono">${detalhesValores}</p>
-                                        <div class="mt-2 text-sm">
-                                            Devido: <strong>${formatCurrency(g.totalDevido)}</strong> <span class="mx-2 text-gray-300">|</span> 
-                                            Pago: <strong>${formatCurrency(g.totalPago)}</strong>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        ${statusText}
-                                        <div class="mt-2 flex gap-1 justify-end">
-                                            <button onclick="abrirModalPagamento('${g.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 shadow" title="Baixar Pagamento"><i class="fas fa-check"></i> Pagar</button>
-                                            <button onclick="editarGuia('${g.id}', '${g.tipo}', '${g.vPrincipal}', '${g.vDecimo}', '${g.vSegurado}', '${g.vPatronal}', '${g.obs}')" class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-200"><i class="fas fa-pencil-alt"></i></button>
-                                            <button onclick="excluir('GUIAS', '${g.id}')" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs hover:bg-red-200"><i class="fas fa-trash"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                                ${pgtosHtml}
-                            </div>
-                        `;
-                    });
-                } else { empty.classList.remove('hidden'); }
-            } catch(e) { showToast('Erro ao carregar guias', 'error'); } finally { setLoading(false); }
+        // --- AUXILIARES ---
+        async function togglePagamento(id, origem, checkbox) {
+            checkbox.disabled = true;
+            const novoStatus = checkbox.checked ? 'Pago' : 'Pendente';
+            const label = checkbox.parentElement.nextElementSibling;
+            label.innerText = novoStatus === 'Pago' ? 'PAGO' : 'PENDENTE';
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus, usuarioLog: currentUser }) });
+                invalidateCache();
+                const tr = checkbox.closest('tr');
+                const desc = tr.querySelector('td:nth-child(2)');
+                if(novoStatus === 'Pago') { tr.classList.add('bg-green-50'); desc.classList.add('text-gray-400', 'line-through'); desc.classList.remove('text-gray-900'); }
+                else { tr.classList.remove('bg-green-50'); desc.classList.remove('text-gray-400', 'line-through'); desc.classList.add('text-gray-900'); }
+            } catch(e) { checkbox.checked = !checkbox.checked; showToast('Erro', 'error'); } finally { checkbox.disabled = false; }
         }
 
         async function carregarTiposParaSelect() {
-            const res = await fetch(`${API_URL}?action=getConfigGuias&token=${authToken}`);
-            const json = await res.json();
+            const res = await fetchData('getConfigGuias');
             const select = document.getElementById('select-tipo-guia');
             select.innerHTML = '';
-            if(json.status === 'success') { json.data.forEach(t => { select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; }); }
+            if(res.status === 'success') { res.data.forEach(t => { select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; }); }
         }
         function abrirModalPagamento(idGuia) { document.getElementById('input-id-guia-ref').value = idGuia; const hoje = new Date().toISOString().split('T')[0]; document.querySelector('#modal-pagamento-guia input[type="date"]').value = hoje; toggleModal('modal-pagamento-guia'); }
         function editarGuia(id, tipo, vPrinc, vDec, vSeg, vPatr, obs) { abrirModal('modal-guia', 'adicionarGuiaObrigacao', { id: id, tipo: tipo, valorPrincipal: vPrinc, valorDecimo: vDec, valorSegurado: vSeg, valorPatronal: vPatr, obs: obs }); const select = document.getElementById('select-tipo-guia'); select.value = tipo; select.dispatchEvent(new Event('change')); }
-
-        // --- SISTEMA DE CONFIRMAÇÃO ---
-        function confirmarImportacao(sheetTarget) { openConfirm(`Copiar registros do mês anterior para ${currentCompetencia}?`, async () => { setLoading(true); try { const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'importarMesAnterior', sheetTarget, competenciaAtual:currentCompetencia, usuarioLog:currentUser})}); const json = await res.json(); showToast(json.status==='success'?'Sucesso!':'Erro', json.status); if(json.status==='success') document.querySelector('.nav-btn.tab-active').click(); } catch(e) { showToast('Erro conexão', 'error'); } finally { setLoading(false); } }); }
+        function confirmarImportacao(sheetTarget) { openConfirm(`Copiar registros do mês anterior para ${currentCompetencia}?`, async () => { setLoading(true); try { const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'importarMesAnterior', sheetTarget, competenciaAtual:currentCompetencia, usuarioLog:currentUser})}); const json = await res.json(); invalidateCache(); showToast(json.status==='success'?'Sucesso!':'Erro', json.status); if(json.status==='success') document.querySelector('.nav-btn.tab-active').click(); } catch(e) { showToast('Erro conexão', 'error'); } finally { setLoading(false); } }); }
         function openConfirm(msg, callback) { document.getElementById('confirm-msg').innerText = msg; document.getElementById('modal-confirm').classList.remove('hidden'); confirmCallback = callback; }
         function closeConfirm(yes) { document.getElementById('modal-confirm').classList.add('hidden'); if(yes && confirmCallback) confirmCallback(); confirmCallback = null; }
-        async function excluir(sheetKey, id) { openConfirm("Excluir este registro?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheetKey, id, competencia:currentCompetencia, usuarioLog:currentUser})}); showToast('Excluído', 'success'); if(sheetKey === 'GUIAS') carregarGuias(); else document.querySelector('.nav-btn.tab-active').click(); setLoading(false); }); }
+        async function excluir(sheetKey, id) { openConfirm("Excluir este registro?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheetKey, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); if(sheetKey === 'GUIAS') carregarGuias(); else document.querySelector('.nav-btn.tab-active').click(); setLoading(false); }); }
+        
+        function abrirModal(id, action, editData=null) {
+            const m = document.getElementById(id);
+            const f = m.querySelector('form');
+            if (!f) return;
+            f.reset();
+            const actionInput = f.querySelector('[name="action_type"]');
+            if (actionInput) actionInput.value = action;
+            const idInput = f.querySelector('[name="id"]');
+            if (idInput) idInput.value = "";
+            const titleEl = m.querySelector('h3');
+            if (titleEl) titleEl.innerText = titleEl.innerText.replace('Editar', 'Adicionar');
+            if (editData) {
+                if (idInput) idInput.value = editData.id;
+                for (let k in editData) {
+                    const input = f.querySelector(`[name="${k}"]`);
+                    if (input) { input.value = k.includes('valor') ? formatCurrency(editData[k]) : editData[k]; }
+                }
+                if (titleEl) titleEl.innerText = titleEl.innerText.replace('Adicionar', 'Editar');
+            }
+            toggleModal(id);
+        }
 
-        // --- RENDERERS GERAIS ---
+        // --- RENDERERS ---
         function renderRowImposto(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-700">${row[1]}</td><td class="p-3">${row[2]}</td><td class="p-3 text-right font-bold">${formatCurrency(row[3])}</td><td class="p-3 text-xs text-gray-500">${row[4]}</td><td class="p-3 text-center">${getActions('IMPOSTO', row, 6)}</td></tr>`; }
         function renderRowFolha(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}</td><td class="p-3 text-right font-bold text-blue-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs">${row[3]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 6)}</td></tr>`; }
         function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 6)}</td></tr>`; }
@@ -684,67 +570,12 @@
             return `<button onclick="abrirModal('${modal}','${action}',${params})" class="text-blue-500 mr-2"><i class="fas fa-pencil-alt"></i></button><button onclick="excluir('${key}','${id}')" class="text-red-400"><i class="fas fa-trash"></i></button>`;
         }
 
-        // --- SUBMIT ---
-        async function handleSubmit(e) { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target).entries()); data.action = data.id ? 'editarRegistro' : data.action_type; data.competencia = currentCompetencia; data.usuarioLog = currentUser; toggleModal(e.target.closest('div[id^="modal"]').id); setLoading(true); try { const res = await fetch(API_URL, {method:'POST', body:JSON.stringify(data)}); const json = await res.json(); showToast(json.status==='success'?'Salvo!':'Erro', json.status); if(data.action_type === 'adicionarGuiaObrigacao' || data.action_type === 'adicionarPagamentoGuia') { carregarGuias(); } else { document.querySelector('.nav-btn.tab-active').click(); } } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); } }
-        async function carregarResumo() { const res = await fetch(`${API_URL}?action=getResumoMensal&competencia=${currentCompetencia}&token=${authToken}`); const json = await res.json(); if(json.status === 'success') { document.getElementById('dash-total-folha').innerText = formatCurrency(json.folha.total_geral); document.getElementById('dash-sub-folha').innerText = `Normal: ${formatCurrency(json.folha.total_normal)} | 13º: ${formatCurrency(json.folha.total_decimo)}`; document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros); document.getElementById('dash-total-imposto').innerText = formatCurrency(json.imposto.total); document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco); document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total); document.getElementById('dash-total-adm').innerText = formatCurrency(json.administrativo.total); document.getElementById('dash-recolhimento-pago').innerText = formatCurrency(json.recolhimento.pago); document.getElementById('dash-recolhimento-devido').innerText = formatCurrency(json.recolhimento.devido); document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral); document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros); document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco); } }
-        async function carregarLista(sheet, tbodyId, emptyId, renderFn) { setLoading(true); const res = await fetch(`${API_URL}?action=getList&sheet=${sheet}&competencia=${currentCompetencia}&token=${authToken}`); const json = await res.json(); const tbody = document.getElementById(tbodyId); tbody.innerHTML = ''; if(json.data && json.data.length > 0) { document.getElementById(emptyId).classList.add('hidden'); json.data.forEach(r => tbody.innerHTML += renderFn(r)); } else { document.getElementById(emptyId).classList.remove('hidden'); } setLoading(false); }
-
-        async function carregarConferencia() {
-            setLoading(true);
-            try {
-                const response = await fetch(`${API_URL}?action=getConferencia&competencia=${currentCompetencia}&token=${authToken}`);
-                const json = await response.json();
-                const container = document.getElementById('conferencia-container');
-                const empty = document.getElementById('empty-conferencia');
-                container.innerHTML = '';
-                if(json.status === 'success' && json.data.length > 0) {
-                    empty.classList.add('hidden');
-                    const grupos = {};
-                    json.data.forEach(item => { if(!grupos[item.grupo]) grupos[item.grupo] = []; grupos[item.grupo].push(item); });
-                    for (const [nomeGrupo, itens] of Object.entries(grupos)) {
-                        let rows = '';
-                        itens.forEach(item => {
-                            const isPago = item.status === 'Pago';
-                            const switchHtml = `<label class="switch"><input type="checkbox" ${isPago ? 'checked' : ''} onchange="togglePagamento('${item.id}', '${item.origem}', this)"><span class="slider"></span></label><span class="switch-label">${isPago ? 'PAGO' : 'PENDENTE'}</span>`;
-                            rows += `<tr class="hover:bg-gray-50 border-b last:border-0 ${isPago ? 'bg-green-50' : ''}"><td class="px-6 py-4 text-xs font-bold uppercase text-gray-500 w-1/4">${item.origem}</td><td class="px-6 py-4 font-medium ${isPago ? 'text-gray-400 line-through' : 'text-gray-900'} w-1/3">${item.descricao}</td><td class="px-6 py-4 text-right font-bold w-1/4">${formatCurrency(item.valor)}</td><td class="px-6 py-4 text-center flex items-center justify-center">${switchHtml}</td></tr>`;
-                        });
-                        container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100"><div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold text-gray-700">${nomeGrupo}</h3><span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-bold">${itens.length}</span></div><table class="w-full text-sm text-left"><tbody class="divide-y divide-gray-100">${rows}</tbody></table></div>`;
-                    }
-                } else { empty.classList.remove('hidden'); }
-            } catch(e) { showToast('Erro lista', 'error'); } finally { setLoading(false); }
-        }
-
-        async function togglePagamento(id, origem, checkbox) { checkbox.disabled = true; const novoStatus = checkbox.checked ? 'Pago' : 'Pendente'; const label = checkbox.parentElement.nextElementSibling; label.innerText = novoStatus === 'Pago' ? 'PAGO' : 'PENDENTE'; try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus, usuarioLog: currentUser }) }); const tr = checkbox.closest('tr'); const desc = tr.querySelector('td:nth-child(2)'); if(novoStatus === 'Pago') { tr.classList.add('bg-green-50'); desc.classList.add('text-gray-400', 'line-through'); desc.classList.remove('text-gray-900'); } else { tr.classList.remove('bg-green-50'); desc.classList.remove('text-gray-400', 'line-through'); desc.classList.add('text-gray-900'); } } catch(e) { checkbox.checked = !checkbox.checked; showToast('Erro', 'error'); } finally { checkbox.disabled = false; } }
-        function abrirModal(id, action, editData=null) { const m = document.getElementById(id); const f = m.querySelector('form'); if (!f) return; f.reset(); const actionInput = f.querySelector('[name="action_type"]'); if (actionInput) actionInput.value = action; const idInput = f.querySelector('[name="id"]'); if (idInput) idInput.value = ""; const titleEl = m.querySelector('h3'); if (titleEl) titleEl.innerText = titleEl.innerText.replace('Editar', 'Adicionar'); if (editData) { if (idInput) idInput.value = editData.id; for (let k in editData) { const input = f.querySelector(`[name="${k}"]`); if (input) { input.value = k.includes('valor') ? formatCurrency(editData[k]) : editData[k]; } } if (titleEl) titleEl.innerText = titleEl.innerText.replace('Adicionar', 'Editar'); } toggleModal(id); }
+        // --- UTILS ---
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
         function setLoading(act) { document.getElementById('loadingOverlay').classList.toggle('hidden', !act); }
         function formatCurrency(v) { return parseFloat(v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
         function showToast(msg, type) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText=msg; t.className=type; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
         function setupMoneyMask() { document.querySelectorAll('.money-mask').forEach(i => i.addEventListener('input', e => { let v = e.target.value.replace(/\D/g,""); v=(v/100).toFixed(2)+""; e.target.value="R$ "+v.replace(".",",").replace(/(\d)(?=(\d{3})+(?!\d))/g,"$1."); })); }
-        
-        async function carregarPendencias() {
-             setLoading(true);
-            try {
-                const response = await fetch(`${API_URL}?action=getPendencias&token=${authToken}`);
-                const json = await response.json();
-                const container = document.getElementById('pendencias-container');
-                const emptyDiv = document.getElementById('empty-pendencias');
-                container.innerHTML = '';
-                if(json.status === 'success' && json.data.length > 0) {
-                    emptyDiv.classList.add('hidden');
-                    const grupos = {};
-                    json.data.forEach(item => { const grp = item.grupo || 'Geral'; if(!grupos[grp]) grupos[grp] = []; grupos[grp].push(item); });
-                    for (const [nomeGrupo, itens] of Object.entries(grupos)) {
-                        let rows = '';
-                        itens.forEach(row => {
-                            let badgeClass = 'bg-red-100 text-red-600'; if(row.status === 'A Receber') badgeClass = 'bg-purple-100 text-purple-600';
-                            rows += `<tr class="hover:bg-red-50 border-b border-red-100 last:border-0"><td class="px-6 py-3 text-sm font-bold text-gray-700 w-1/6">${row.competencia}</td><td class="px-6 py-3 text-xs uppercase text-gray-500 w-1/6">${row.origem}</td><td class="px-6 py-3 text-sm text-gray-800 font-medium w-1/3">${row.descricao}</td><td class="px-6 py-3 text-right font-bold text-gray-800 w-1/6">${formatCurrency(row.valor)}</td><td class="px-6 py-3 text-center w-1/6"><span class="${badgeClass} font-bold text-xs px-2 py-1 rounded">${row.status}</span></td></tr>`;
-                        });
-                        container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-red-100 mb-6"><div class="bg-red-50 px-6 py-3 border-b border-red-100 flex justify-between items-center"><h3 class="font-bold text-red-800 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i>${nomeGrupo}</h3><span class="bg-white text-red-600 text-xs px-2 py-1 rounded-full font-bold border border-red-200">${itens.length} itens</span></div><table class="w-full text-left"><tbody class="divide-y divide-red-50">${rows}</tbody></table></div>`;
-                    }
-                } else { emptyDiv.classList.remove('hidden'); }
-            } catch(e) { console.error(e); } finally { setLoading(false); }
-        }
     </script>
 </body>
 </html>
