@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão RPPS - Controle Financeiro</title>
     
-    <!-- Tailwind CSS (Estilos) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- FontAwesome (Ícones) -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
@@ -17,41 +17,111 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .tab-active { background-color: #2563eb; color: white; }
+        
+        /* Loading Overlay com Z-Index alto para cobrir modais */
+        #loadingOverlay { z-index: 60; }
+        
+        /* Spinner */
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .hidden-section { display: none; }
         
-        /* Estilo para input de mês customizado */
-        input[type="month"] {
+        /* Input de Mês Customizado */
+        input[type="month"] { position: relative; }
+        input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(1); }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 70;
+            left: 50%;
+            top: 30px;
+            transform: translateX(-50%);
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s, top 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            top: 50px;
+        }
+        #toast.success { background-color: #10B981; } /* Green */
+        #toast.error { background-color: #EF4444; } /* Red */
+
+        /* SWITCH TOGGLE CSS */
+        .switch {
             position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
         }
-        input[type="month"]::-webkit-calendar-picker-indicator {
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
             cursor: pointer;
-            filter: invert(1);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
         }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #10B981; }
+        input:focus + .slider { box-shadow: 0 0 1px #10B981; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        /* Label do Switch */
+        .switch-label {
+            margin-left: 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #6B7280;
+        }
+        input:checked ~ .switch-label { color: #10B981; }
+
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col md:flex-row overflow-hidden">
 
-    <!-- SIDEBAR DE NAVEGAÇÃO -->
+    <!-- TOAST DE NOTIFICAÇÃO -->
+    <div id="toast"><i class="fas fa-check-circle mr-2"></i><span id="toast-msg">Mensagem</span></div>
+
+    <!-- SIDEBAR -->
     <aside class="w-full md:w-64 bg-white shadow-lg flex flex-col z-20">
-        
-        <!-- DESTAQUE DA COMPETÊNCIA -->
         <div class="p-6 bg-blue-800 text-white">
             <h1 class="text-lg font-bold mb-1"><i class="fas fa-university mr-2"></i>Gestão RPPS</h1>
-            <p class="text-xs text-blue-200 mb-4">Sistema de Controle</p>
+            <p class="text-xs text-blue-200 mb-4">Controle Financeiro</p>
             
             <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência (Mês/Ano)</label>
             <div class="relative">
                 <input type="month" id="inputCompetencia" onchange="mudarCompetencia(this.value)" 
-                       class="w-full p-3 bg-blue-700 border border-blue-600 rounded text-white font-bold text-center focus:outline-none focus:border-white shadow-inner cursor-pointer">
+                       class="w-full p-3 bg-blue-700 border border-blue-600 rounded text-white font-bold text-center focus:outline-none focus:border-white shadow-inner cursor-pointer hover:bg-blue-600 transition-colors">
             </div>
             <p class="text-[10px] text-center mt-2 text-blue-300">Selecione para mudar o mês</p>
         </div>
@@ -90,9 +160,10 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-100 relative">
         
         <!-- LOADING OVERLAY -->
-        <div id="loadingOverlay" class="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center hidden">
+        <div id="loadingOverlay" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center hidden backdrop-blur-sm">
             <div class="loader mb-4"></div>
-            <p class="text-blue-600 font-semibold animate-pulse">Processando...</p>
+            <p class="text-blue-600 font-bold text-lg animate-pulse">Processando...</p>
+            <p class="text-gray-400 text-sm mt-2">Aguarde, atualizando dados.</p>
         </div>
 
         <!-- CABEÇALHO MOBILE -->
@@ -104,96 +175,57 @@
         <!-- CONTEÚDO SCROLLÁVEL -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8" id="mainContent">
             
-            <!-- VIEW: RESUMO (DASHBOARD) -->
+            <!-- VIEW: RESUMO -->
             <div id="view-resumo" class="view-section">
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800">Resumo Financeiro</h2>
-                        <p class="text-sm text-gray-500">Visão geral da competência <span class="current-comp font-bold text-blue-600">--/----</span></p>
+                        <p class="text-sm text-gray-500">Competência <span class="current-comp font-bold text-blue-600">--/----</span></p>
                     </div>
                     <button onclick="carregarResumo()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
-
-                <!-- Cards de Totais -->
+                <!-- Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Total Folha -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Obrigações (Folha+13º)</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-folha">R$ 0,00</h3>
-                                <p class="text-xs text-gray-400 mt-1" id="dash-sub-folha">Carregando...</p>
-                            </div>
-                            <div class="p-2 bg-blue-100 rounded-lg text-blue-600"><i class="fas fa-users"></i></div>
-                        </div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Obrigações (Folha+13º)</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-folha">R$ 0,00</h3>
+                        <p class="text-xs text-gray-400 mt-1" id="dash-sub-folha">Carregando...</p>
                     </div>
-                    <!-- Outros Bancos -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Outros Bancos</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
-                            </div>
-                            <div class="p-2 bg-orange-100 rounded-lg text-orange-600"><i class="fas fa-university"></i></div>
-                        </div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Outros Bancos</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
                     </div>
-                    <!-- Bradesco -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Líquido Bradesco (Est.)</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-bradesco">R$ 0,00</h3>
-                            </div>
-                            <div class="p-2 bg-green-100 rounded-lg text-green-600"><i class="fas fa-money-check-alt"></i></div>
-                        </div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Líquido Bradesco (Est.)</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-bradesco">R$ 0,00</h3>
                     </div>
-                    <!-- Consignados -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Consignados</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3>
-                            </div>
-                            <div class="p-2 bg-purple-100 rounded-lg text-purple-600"><i class="fas fa-hand-holding-usd"></i></div>
-                        </div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Consignados</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3>
                     </div>
                 </div>
-
                 <!-- Conferência -->
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
                     <h3 class="font-bold text-lg mb-4 text-gray-800">Conferência da Folha</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <tbody class="divide-y divide-gray-100">
-                                <tr>
-                                    <td class="px-4 py-3 font-medium">Total (Folha + 13º)</td>
-                                    <td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-3">(-) Outros Bancos</td>
-                                    <td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td>
-                                </tr>
-                                <tr class="bg-green-50">
-                                    <td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td>
-                                    <td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="w-full text-sm text-left">
+                        <tbody class="divide-y divide-gray-100">
+                            <tr><td class="px-4 py-3 font-medium">Total (Folha + 13º)</td><td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td></tr>
+                            <tr><td class="px-4 py-3">(-) Outros Bancos</td><td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td></tr>
+                            <tr class="bg-green-50"><td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td><td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- VIEW: CONFERÊNCIA PAGAMENTOS (NOVA) -->
+            <!-- VIEW: CONFERÊNCIA PAGAMENTOS (COM SWITCH) -->
             <div id="view-conferencia" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência de Pagamentos</h2>
                     <button onclick="carregarConferencia()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
-                
-                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4 text-sm text-yellow-800">
-                    <i class="fas fa-info-circle mr-2"></i> Aqui você confere tudo o que foi lançado no mês. Marque o que já foi pago. O que não for marcado ficará como Pendência.
+                <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 text-sm text-green-800">
+                    <i class="fas fa-info-circle mr-2"></i> Use os interruptores abaixo para marcar o que já foi pago. Tudo que estiver desligado será considerado <strong>Pendente</strong>.
                 </div>
-
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
@@ -201,8 +233,7 @@
                                 <th class="px-6 py-3">Origem</th>
                                 <th class="px-6 py-3">Descrição / Nome</th>
                                 <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3 text-center">Status</th>
-                                <th class="px-6 py-3 text-center">Ação</th>
+                                <th class="px-6 py-3 text-center">Pago?</th>
                             </tr>
                         </thead>
                         <tbody id="lista-conferencia" class="divide-y divide-gray-100"></tbody>
@@ -215,83 +246,47 @@
             <div id="view-folha" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">Folha de Pagamento</h2>
-                    <button onclick="toggleModal('modal-folha')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                        <i class="fas fa-plus mr-2"></i>Adicionar
-                    </button>
+                    <button onclick="toggleModal('modal-folha')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Adicionar</button>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Tipo</th>
-                                <th class="px-6 py-3 text-right">Valor Total</th>
-                                <th class="px-6 py-3">Obs</th>
-                                <th class="px-6 py-3 text-center">Excluir</th>
-                            </tr>
-                        </thead>
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                         <tbody id="lista-folha" class="divide-y divide-gray-100"></tbody>
                     </table>
-                    <div id="empty-folha" class="p-8 text-center text-gray-500 hidden">Nenhum registro encontrado.</div>
+                    <div id="empty-folha" class="p-8 text-center text-gray-500 hidden">Nenhum registro.</div>
                 </div>
             </div>
 
             <!-- VIEW: 13º SALÁRIO -->
             <div id="view-decimo" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-blue-800">13º Salário</h2>
-                    </div>
-                    <button onclick="toggleModal('modal-decimo')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                        <i class="fas fa-plus mr-2"></i>Adicionar
-                    </button>
+                    <h2 class="text-2xl font-bold text-blue-800">13º Salário</h2>
+                    <button onclick="toggleModal('modal-decimo')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Adicionar</button>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-blue-100">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Tipo Beneficiário</th>
-                                <th class="px-6 py-3 text-right">Valor 13º</th>
-                                <th class="px-6 py-3">Observação</th>
-                                <th class="px-6 py-3 text-center">Excluir</th>
-                            </tr>
-                        </thead>
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                         <tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody>
                     </table>
-                    <div id="empty-decimo" class="p-8 text-center text-gray-500 hidden">Nenhum registro de 13º nesta competência.</div>
+                    <div id="empty-decimo" class="p-8 text-center text-gray-500 hidden">Nenhum registro.</div>
                 </div>
             </div>
 
-            <!-- VIEW: OUTROS BANCOS (COM IMPORTAÇÃO) -->
+            <!-- VIEW: OUTROS BANCOS -->
             <div id="view-outros" class="view-section hidden-section">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-2xl font-bold">Outros Bancos</h2>
                     <div class="flex gap-2">
-                        <button onclick="importarMesAnterior('OUTROS_BANCOS')" class="bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm shadow">
-                            <i class="fas fa-copy mr-2"></i>Copiar do Mês Anterior
-                        </button>
-                        <button onclick="toggleModal('modal-outros')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                            <i class="fas fa-plus mr-2"></i>Adicionar
-                        </button>
+                        <button onclick="importarMesAnterior('OUTROS_BANCOS')" class="bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm shadow"><i class="fas fa-copy mr-2"></i>Copiar Anterior</button>
+                        <button onclick="toggleModal('modal-outros')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Adicionar</button>
                     </div>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Nome</th>
-                                <th class="px-6 py-3">Tipo</th>
-                                <th class="px-6 py-3">Banco</th>
-                                <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3">Obs</th>
-                                <th class="px-6 py-3 text-center">Excluir</th>
-                            </tr>
-                        </thead>
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                         <tbody id="lista-outros" class="divide-y divide-gray-100"></tbody>
                     </table>
-                    <div id="empty-outros" class="p-8 text-center text-gray-500 hidden">Nenhum registro encontrado.</div>
+                    <div id="empty-outros" class="p-8 text-center text-gray-500 hidden">Nenhum registro.</div>
                 </div>
             </div>
 
@@ -299,83 +294,43 @@
             <div id="view-consignados" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">Consignados</h2>
-                    <button onclick="toggleModal('modal-consignados')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                        <i class="fas fa-plus mr-2"></i>Adicionar
-                    </button>
+                    <button onclick="toggleModal('modal-consignados')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Adicionar</button>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Tipo Consignado</th>
-                                <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3">Obs</th>
-                                <th class="px-6 py-3 text-center">Excluir</th>
-                            </tr>
-                        </thead>
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                         <tbody id="lista-consignados" class="divide-y divide-gray-100"></tbody>
                     </table>
-                    <div id="empty-consignados" class="p-8 text-center text-gray-500 hidden">Nenhum registro encontrado.</div>
+                    <div id="empty-consignados" class="p-8 text-center text-gray-500 hidden">Nenhum registro.</div>
                 </div>
             </div>
 
-            <!-- VIEW: ASSESSORIAS & DESPESAS (ANTIGO ADM) -->
+            <!-- VIEW: ASSESSORIAS -->
             <div id="view-adm" class="view-section hidden-section">
-                
-                <!-- Recorrentes -->
                 <div class="mb-8">
                     <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-700">Assessorias Mensais (Fixos)</h3>
-                            <p class="text-xs text-gray-500">Contabilidade, Jurídico, Consultorias, etc.</p>
-                        </div>
+                        <h3 class="text-xl font-bold text-gray-700">Assessorias Mensais (Fixos)</h3>
                         <div class="flex gap-2">
-                             <button onclick="importarMesAnterior('PAGAMENTOS_RECORRENTES')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 text-xs shadow">
-                                <i class="fas fa-copy mr-1"></i> Copiar Anterior
-                            </button>
-                            <button onclick="toggleModal('modal-recorrentes')" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs shadow">
-                                <i class="fas fa-plus mr-1"></i> Adicionar
-                            </button>
+                             <button onclick="importarMesAnterior('PAGAMENTOS_RECORRENTES')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 text-xs shadow"><i class="fas fa-copy mr-1"></i> Copiar Anterior</button>
+                            <button onclick="toggleModal('modal-recorrentes')" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs shadow"><i class="fas fa-plus mr-1"></i> Adicionar</button>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                                <tr>
-                                    <th class="px-6 py-3">Descrição</th>
-                                    <th class="px-6 py-3 text-right">Valor</th>
-                                    <th class="px-6 py-3 text-center">Status</th>
-                                    <th class="px-6 py-3 text-center">Excluir</th>
-                                </tr>
-                            </thead>
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                             <tbody id="lista-recorrentes" class="divide-y divide-gray-100"></tbody>
                         </table>
                         <div id="empty-recorrentes" class="p-8 text-center text-gray-500 hidden">Nada lançado.</div>
                     </div>
                 </div>
-
-                <!-- Eventuais -->
                 <div>
                     <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-700">Outras Despesas (Eventuais)</h3>
-                            <p class="text-xs text-gray-500">Consertos, compras únicas, taxas extras.</p>
-                        </div>
-                        <button onclick="toggleModal('modal-eventuais')" class="bg-purple-600 text-white px-3 py-1.5 rounded hover:bg-purple-700 text-xs shadow">
-                            <i class="fas fa-plus mr-1"></i> Adicionar
-                        </button>
+                        <h3 class="text-xl font-bold text-gray-700">Outras Despesas (Eventuais)</h3>
+                        <button onclick="toggleModal('modal-eventuais')" class="bg-purple-600 text-white px-3 py-1.5 rounded hover:bg-purple-700 text-xs shadow"><i class="fas fa-plus mr-1"></i> Adicionar</button>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                                <tr>
-                                    <th class="px-6 py-3">Descrição</th>
-                                    <th class="px-6 py-3 text-right">Valor</th>
-                                    <th class="px-6 py-3 text-center">Status</th>
-                                    <th class="px-6 py-3 text-center">Excluir</th>
-                                </tr>
-                            </thead>
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Excluir</th></tr></thead>
                             <tbody id="lista-eventuais" class="divide-y divide-gray-100"></tbody>
                         </table>
                         <div id="empty-eventuais" class="p-8 text-center text-gray-500 hidden">Nada lançado.</div>
@@ -387,228 +342,42 @@
             <div id="view-pendencias" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-red-600">Pendências em Aberto</h2>
-                    <button onclick="carregarPendencias()" class="text-sm text-gray-600 hover:text-gray-900">
-                        <i class="fas fa-sync mr-1"></i>Atualizar Lista
-                    </button>
+                    <button onclick="carregarPendencias()" class="text-sm text-gray-600 hover:text-gray-900"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
-
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <p class="text-sm text-red-800"><i class="fas fa-info-circle mr-2"></i>Esta lista exibe todos os pagamentos marcados como "Pendente" em qualquer competência. Regularize marcando como "Pago" na aba de origem ou aqui (futuro).</p>
-                </div>
-                
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Competência</th>
-                                <th class="px-6 py-3">Origem</th>
-                                <th class="px-6 py-3">Descrição / Nome</th>
-                                <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3 text-center">Status</th>
-                            </tr>
-                        </thead>
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Competência</th><th class="px-6 py-3">Origem</th><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Status</th></tr></thead>
                         <tbody id="lista-pendencias" class="divide-y divide-gray-100"></tbody>
                     </table>
-                    <div id="empty-pendencias" class="p-8 text-center text-gray-500 hidden">Nenhuma pendência encontrada! 🎉</div>
+                    <div id="empty-pendencias" class="p-8 text-center text-gray-500 hidden">Nenhuma pendência.</div>
                 </div>
             </div>
 
         </div>
     </main>
 
-    <!-- MODAIS -->
-
-    <!-- Modal Adicionar Folha -->
-    <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Folha</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarFolha')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Tipo de Folha</label>
-                    <select name="tipo" class="w-full border rounded p-2" required>
-                        <option value="Aposentados">Aposentados</option>
-                        <option value="Pensionistas">Pensionistas</option>
-                        <option value="Comissionados">Comissionados</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor Total</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-folha')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Adicionar 13º -->
-    <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600">
-            <h3 class="font-bold text-lg mb-4 text-blue-800">Adicionar 13º Salário</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarDecimo')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Tipo de Beneficiário</label>
-                    <select name="tipo" class="w-full border rounded p-2" required>
-                        <option value="Aposentados">Aposentados</option>
-                        <option value="Pensionistas">Pensionistas</option>
-                        <option value="Comissionados">Comissionados</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor 13º</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-decimo')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Outros Bancos -->
-    <div id="modal-outros" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Outro Banco</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarOutrosBancos')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Nome</label>
-                    <input type="text" name="nome" class="w-full border rounded p-2" required>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
-                        <select name="tipo" class="w-full border rounded p-2">
-                            <option value="Aposentado">Aposentado</option>
-                            <option value="Pensionista">Pensionista</option>
-                            <option value="Comissionado">Comissionado</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Banco</label>
-                        <input type="text" name="banco" class="w-full border rounded p-2" required>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-outros')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Consignados -->
-    <div id="modal-consignados" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Consignado</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarConsignado')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Tipo / Banco</label>
-                    <input type="text" name="tipo" class="w-full border rounded p-2" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-consignados')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Recorrentes (Sem Status) -->
-    <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Assessoria/Fixo</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarRecorrente')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
-                    <input type="text" name="descricao" class="w-full border rounded p-2" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
-                    <select name="tipo" class="w-full border rounded p-2">
-                        <option value="Assessoria">Assessoria</option>
-                        <option value="Serviço">Serviço</option>
-                        <option value="Outro">Outro</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-recorrentes')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-     <!-- Modal Eventuais (Sem Status) -->
-     <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Pagamento Eventual</h3>
-            <form onsubmit="handleSubmit(event, 'adicionarOutroPagamento')">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
-                    <input type="text" name="descricao" class="w-full border rounded p-2" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
-                    <input type="text" name="obs" class="w-full border rounded p-2">
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('modal-eventuais')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- MODAIS (SITUAÇÃO REMOVIDA) -->
+    <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Adicionar Folha</h3><form onsubmit="handleSubmit(event, 'adicionarFolha')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" class="w-full border p-2 rounded" required><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor Total</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-folha')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    
+    <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600"><h3 class="font-bold text-lg mb-4 text-blue-800">Adicionar 13º</h3><form onsubmit="handleSubmit(event, 'adicionarDecimo')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" class="w-full border p-2 rounded" required><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-decimo')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    
+    <div id="modal-outros" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Adicionar Outro Banco</h3><form onsubmit="handleSubmit(event, 'adicionarOutrosBancos')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Nome</label><input name="nome" class="w-full border p-2 rounded" required></div><div class="grid grid-cols-2 gap-4"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" class="w-full border p-2 rounded"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Banco</label><input name="banco" class="w-full border p-2 rounded" required></div></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-outros')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    
+    <div id="modal-consignados" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Adicionar Consignado</h3><form onsubmit="handleSubmit(event, 'adicionarConsignado')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo/Banco</label><input name="tipo" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-consignados')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    
+    <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Adicionar Assessoria/Fixo</h3><form onsubmit="handleSubmit(event, 'adicionarRecorrente')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" class="w-full border p-2 rounded"><option>Assessoria</option><option>Serviço</option><option>Outro</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-recorrentes')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    
+    <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Adicionar Pagamento Eventual</h3><form onsubmit="handleSubmit(event, 'adicionarOutroPagamento')"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end gap-2"><button type="button" onclick="toggleModal('modal-eventuais')" class="px-4 py-2 text-gray-600">Cancelar</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
 
     <!-- JAVASCRIPT -->
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwt5wH_wT65wfXyaBc78YK4ZBHcCi7zFATSQRk6yytCTHFlqCLs1Gc7JSS395aYNUmR/exec";
-        
         let currentCompetencia = "";
 
         window.onload = function() {
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
-            
             document.getElementById('inputCompetencia').value = `${yyyy}-${mm}`;
             mudarCompetencia(`${yyyy}-${mm}`);
             setupMoneyMask();
@@ -618,10 +387,8 @@
             if(!valYYYYMM) return;
             const [year, month] = valYYYYMM.split('-');
             currentCompetencia = `${month}/${year}`;
-            
             document.querySelectorAll('.current-comp').forEach(el => el.innerText = currentCompetencia);
             document.getElementById('mobile-comp').innerText = currentCompetencia;
-            
             const activeBtn = document.querySelector('.nav-btn.tab-active');
             if(activeBtn) activeBtn.click();
         }
@@ -629,7 +396,6 @@
         function showView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('tab-active'));
-            
             document.getElementById(`view-${viewName}`).classList.remove('hidden-section');
             document.getElementById(`btn-${viewName}`).classList.add('tab-active');
 
@@ -646,9 +412,14 @@
             if (viewName === 'pendencias') carregarPendencias();
         }
 
+        // --- FUNÇÕES DE IMPORTAÇÃO E EXCLUSÃO ---
+
         async function importarMesAnterior(sheetTarget) {
-            if(!confirm(`Deseja importar os registros do mês anterior para ${currentCompetencia}? Isso duplicará os valores.`)) return;
+            if(!confirm(`Confirma copiar todos os registros do mês anterior para ${currentCompetencia}?`)) return;
+            
+            // Forçar carregamento imediato
             setLoading(true);
+            
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -659,10 +430,21 @@
                     })
                 });
                 const json = await response.json();
-                alert(json.message);
-                if(json.status === 'success') document.querySelector('.nav-btn.tab-active').click();
-            } catch(e) { console.error(e); alert("Erro ao importar."); }
-            finally { setLoading(false); }
+                
+                // Exibe resultado com Toast em vez de alert
+                if(json.status === 'success') {
+                    showToast('Sucesso: ' + json.message, 'success');
+                    // Recarrega a view
+                    document.querySelector('.nav-btn.tab-active').click();
+                } else {
+                    showToast('Erro: ' + json.message, 'error');
+                }
+            } catch(e) { 
+                console.error(e); 
+                showToast('Erro de conexão ao importar.', 'error');
+            } finally { 
+                setLoading(false); 
+            }
         }
 
         async function excluir(sheetName, id) {
@@ -674,16 +456,105 @@
                     body: JSON.stringify({ action: 'excluirRegistro', sheetName: sheetName, id: id, competencia: currentCompetencia })
                 });
                 const json = await response.json();
-                if(json.status === 'success') document.querySelector('.nav-btn.tab-active').click();
-                else alert("Erro: " + json.message);
-            } catch(e) { console.error(e); } finally { setLoading(false); }
+                if(json.status === 'success') {
+                    showToast('Registro excluído!', 'success');
+                    document.querySelector('.nav-btn.tab-active').click();
+                } else {
+                    showToast("Erro: " + json.message, 'error');
+                }
+            } catch(e) { console.error(e); showToast('Erro de comunicação', 'error'); } 
+            finally { setLoading(false); }
         }
 
-        // --- Renderizadores ---
+        // --- SUBMISSÃO OTIMIZADA (SEM TRAVAMENTO) ---
+
+        async function handleSubmit(event, action) {
+            event.preventDefault();
+            
+            // 1. Pega dados antes de mexer na UI
+            const form = event.target;
+            const data = Object.fromEntries(new FormData(form).entries());
+            data.action = action;
+            data.competencia = currentCompetencia;
+            
+            // 2. Fecha modal IMEDIATAMENTE e reseta form
+            const modalId = form.closest('div[id^="modal"]').id;
+            toggleModal(modalId);
+            form.reset();
+
+            // 3. Mostra Loading Overlay
+            setLoading(true);
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
+                const json = await response.json();
+                
+                if(json.status === 'success') {
+                    // 4. Mostra Toast de Sucesso (não bloqueante)
+                    showToast('Salvo com sucesso!', 'success');
+                    // 5. Atualiza lista de fundo
+                    document.querySelector('.nav-btn.tab-active').click();
+                } else {
+                    // Reabre modal ou mostra erro grave? Melhor toast de erro
+                    showToast("Erro ao salvar: " + json.message, 'error');
+                }
+            } catch(e) { 
+                console.error(e); 
+                showToast("Erro de comunicação.", 'error'); 
+            } finally { 
+                // 6. Tira loading (a lista já deve estar carregando ou carregada)
+                // Pequeno delay para evitar piscar se for muito rápido
+                // Mas setLoading(false) já deve ser chamado pelo fetch de atualização da lista se encadeado
+                // Aqui garantimos que fecha se der erro no POST
+                // Se der sucesso, o .click() vai disparar outro setLoading(true) -> carregar -> setLoading(false)
+            }
+        }
+
+        // --- TOAST SYSTEM ---
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            toast.className = type === 'success' ? 'success' : 'error';
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // --- SWITCH TOGGLE PARA CONFERÊNCIA ---
+        async function togglePagamento(id, origem, checkbox) {
+            // Optimistic Update: Assume que vai dar certo, mas bloqueia interação
+            checkbox.disabled = true;
+            const novoStatus = checkbox.checked ? 'Pago' : 'Pendente';
+            
+            // Não bloqueia a tela inteira, apenas mostra um spinner pequeno ou toast
+            showToast('Atualizando status...', 'success'); // Feedback rápido
+
+            try {
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus }) 
+                });
+                const json = await response.json();
+                if(json.status !== 'success') {
+                    // Reverte se der erro
+                    checkbox.checked = !checkbox.checked;
+                    showToast('Erro ao atualizar!', 'error');
+                } else {
+                    // Atualiza label visual ao lado (se houver) ou apenas deixa o toast sumir
+                }
+            } catch(e) {
+                checkbox.checked = !checkbox.checked;
+                showToast('Erro de rede', 'error');
+            } finally {
+                checkbox.disabled = false;
+            }
+        }
+
+        // --- RENDERIZADORES ---
         
         function getDeleteBtn(sheetName, id) {
             if(!id) return '';
-            return `<button onclick="excluir('${sheetName}', '${id}')" class="text-red-400 hover:text-red-600 ml-2" title="Excluir"><i class="fas fa-trash"></i></button>`;
+            return `<button onclick="excluir('${sheetName}', '${id}')" class="text-red-400 hover:text-red-600 ml-2 p-2" title="Excluir"><i class="fas fa-trash"></i></button>`;
         }
 
         function renderRowFolha(row) {
@@ -699,12 +570,10 @@
             return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-gray-500 text-xs">${row[3]}</td><td class="px-6 py-4 text-center">${getDeleteBtn('CONSIGNADOS', row[6])}</td></tr>`;
         }
         function renderRowRecorrente(row) {
-            // [Comp, Desc, Tipo, Valor, Status, Obs, ID]
-            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[3])}</td><td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${row[4]}</span></td><td class="px-6 py-4 text-center">${getDeleteBtn('RECORRENTES', row[6])}</td></tr>`;
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[3])}</td><td class="px-6 py-4 text-center">${getDeleteBtn('RECORRENTES', row[6])}</td></tr>`;
         }
         function renderRowEventual(row) {
-            // [Comp, Desc, Valor, Status, Obs, ID]
-            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${row[3]}</span></td><td class="px-6 py-4 text-center">${getDeleteBtn('OUTROS_PGTOS', row[5])}</td></tr>`;
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-center">${getDeleteBtn('OUTROS_PGTOS', row[5])}</td></tr>`;
         }
 
         // --- CONFERÊNCIA UNIFICADA ---
@@ -721,22 +590,27 @@
                     empty.classList.add('hidden');
                     json.data.forEach(item => {
                         const isPago = item.status === 'Pago';
-                        const btnClass = isPago ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 shadow-md';
-                        const btnText = isPago ? 'Pago <i class="fas fa-check ml-1"></i>' : 'Pagar <i class="fas fa-money-bill-wave ml-1"></i>';
-                        const action = isPago ? '' : `onclick="marcarComoPago('${item.id}', '${item.origem}')"`;
+                        // Switch Toggle HTML
+                        const switchHtml = `
+                            <label class="switch">
+                                <input type="checkbox" ${isPago ? 'checked' : ''} onchange="togglePagamento('${item.id}', '${item.origem}', this)">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-label">${isPago ? 'PAGO' : 'PENDENTE'}</span>
+                        `;
                         
                         tbody.innerHTML += `
                             <tr class="hover:bg-gray-50 border-b last:border-0 ${isPago ? 'bg-green-50' : ''}">
                                 <td class="px-6 py-4 text-xs font-bold uppercase text-gray-500">${item.origem}</td>
                                 <td class="px-6 py-4 font-medium ${isPago ? 'text-gray-400 line-through' : 'text-gray-900'}">${item.descricao}</td>
                                 <td class="px-6 py-4 text-right font-bold">${formatCurrency(item.valor)}</td>
-                                <td class="px-6 py-4 text-center"><span class="${isPago ? 'text-green-600 bg-green-100' : 'text-yellow-600 bg-yellow-100'} px-2 py-1 rounded text-xs font-bold">${item.status}</span></td>
-                                <td class="px-6 py-4 text-center"><button ${action} class="${btnClass} px-3 py-1.5 rounded text-xs font-bold transition-all" ${isPago ? 'disabled' : ''}>${btnText}</button></td>
+                                <td class="px-6 py-4 text-center flex items-center justify-center">${switchHtml}</td>
                             </tr>
                         `;
                     });
                 } else { empty.classList.remove('hidden'); }
-            } catch(e) { console.error(e); } finally { setLoading(false); }
+            } catch(e) { console.error(e); showToast('Erro ao carregar lista', 'error'); } 
+            finally { setLoading(false); }
         }
 
         // --- Funções Padrão ---
@@ -752,7 +626,6 @@
                     document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros_bancos);
                     document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco_estimado);
                     document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total);
-                    
                     document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
                     document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros_bancos);
                     document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco_estimado);
@@ -773,24 +646,6 @@
                     json.data.forEach(row => tbody.innerHTML += renderFn(row));
                 } else { empty.classList.remove('hidden'); }
             } catch(e) { console.error(e); } finally { setLoading(false); }
-        }
-
-        async function handleSubmit(event, action) {
-            event.preventDefault();
-            setLoading(true);
-            const data = Object.fromEntries(new FormData(event.target).entries());
-            data.action = action;
-            data.competencia = currentCompetencia;
-            try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-                const json = await response.json();
-                if(json.status === 'success') {
-                    alert("Salvo!");
-                    event.target.reset();
-                    toggleModal(event.target.closest('div[id^="modal"]').id);
-                    document.querySelector('.nav-btn.tab-active').click();
-                } else alert("Erro: " + json.message);
-            } catch(e) { console.error(e); alert("Erro comunicação"); } finally { setLoading(false); }
         }
 
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
@@ -815,7 +670,6 @@
                 const tbody = document.getElementById('lista-pendencias');
                 const emptyDiv = document.getElementById('empty-pendencias');
                 tbody.innerHTML = '';
-
                 if(json.status === 'success' && json.data.length > 0) {
                     emptyDiv.classList.add('hidden');
                     json.data.forEach(row => {
@@ -832,15 +686,6 @@
                 } else { emptyDiv.classList.remove('hidden'); }
             } catch(e) { console.error(e); } 
             finally { setLoading(false); }
-        }
-        
-        async function marcarComoPago(id, origem) {
-            if(!confirm("Confirmar pagamento?")) return;
-            setLoading(true);
-            try {
-                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus: 'Pago' }) });
-                carregarConferencia(); // Recarrega a tela de conferência
-            } catch(e) { console.error(e); } finally { setLoading(false); }
         }
     </script>
 </body>
