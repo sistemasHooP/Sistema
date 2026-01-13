@@ -27,30 +27,49 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden-section { display: none; }
+        
+        /* Estilo para input de mês customizado */
+        input[type="month"] {
+            position: relative;
+        }
+        input[type="month"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(1);
+        }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col md:flex-row overflow-hidden">
 
     <!-- SIDEBAR DE NAVEGAÇÃO -->
     <aside class="w-full md:w-64 bg-white shadow-lg flex flex-col z-20">
-        <div class="p-6 border-b border-gray-100">
-            <h1 class="text-xl font-bold text-blue-700"><i class="fas fa-university mr-2"></i>Gestão RPPS</h1>
-            <p class="text-xs text-gray-500 mt-1">Sistema de Controle Financeiro</p>
+        
+        <!-- DESTAQUE DA COMPETÊNCIA -->
+        <div class="p-6 bg-blue-800 text-white">
+            <h1 class="text-lg font-bold mb-1"><i class="fas fa-university mr-2"></i>Gestão RPPS</h1>
+            <p class="text-xs text-blue-200 mb-4">Sistema de Controle</p>
+            
+            <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência (Mês/Ano)</label>
+            <div class="relative">
+                <input type="month" id="inputCompetencia" onchange="mudarCompetencia(this.value)" 
+                       class="w-full p-3 bg-blue-700 border border-blue-600 rounded text-white font-bold text-center focus:outline-none focus:border-white shadow-inner cursor-pointer">
+            </div>
+            <p class="text-[10px] text-center mt-2 text-blue-300">Selecione para mudar o mês</p>
         </div>
 
         <nav class="flex-1 overflow-y-auto py-4">
             <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active">
-                <i class="fas fa-chart-pie w-6"></i> Resumo Financeiro
+                <i class="fas fa-chart-pie w-6"></i> Resumo
             </button>
+            <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center">
+                <i class="fas fa-check-double w-6"></i> Conferência Pagtos
+            </button>
+            <div class="border-t border-gray-100 my-2"></div>
             <button onclick="showView('folha')" id="btn-folha" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
                 <i class="fas fa-users w-6"></i> Folha Pagamento
             </button>
-            
-            <!-- NOVO BOTÃO: 13º SALÁRIO -->
-            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center text-blue-800 font-medium">
+            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
                 <i class="fas fa-gift w-6"></i> 13º Salário
             </button>
-
             <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
                 <i class="fas fa-exchange-alt w-6"></i> Outros Bancos
             </button>
@@ -58,23 +77,13 @@
                 <i class="fas fa-hand-holding-usd w-6"></i> Consignados
             </button>
             <button onclick="showView('adm')" id="btn-adm" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-file-invoice-dollar w-6"></i> Administrativo
+                <i class="fas fa-file-invoice-dollar w-6"></i> Assessorias & Desp.
             </button>
             <div class="border-t border-gray-100 my-2"></div>
             <button onclick="showView('pendencias')" id="btn-pendencias" class="nav-btn w-full text-left px-6 py-3 hover:bg-red-50 text-red-600 transition-colors flex items-center">
                 <i class="fas fa-exclamation-circle w-6"></i> Pendências
             </button>
         </nav>
-
-        <div class="p-4 border-t border-gray-100 bg-gray-50">
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Competência (MM/AAAA)</label>
-            <div class="flex">
-                <input type="text" id="globalCompetencia" class="w-full p-2 border rounded-l focus:outline-none focus:border-blue-500 text-center font-bold text-gray-700" placeholder="MM/AAAA" maxlength="7">
-                <button onclick="carregarDadosAtuais()" class="bg-blue-600 text-white px-3 rounded-r hover:bg-blue-700">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-        </div>
     </aside>
 
     <!-- ÁREA PRINCIPAL -->
@@ -83,13 +92,13 @@
         <!-- LOADING OVERLAY -->
         <div id="loadingOverlay" class="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center hidden">
             <div class="loader mb-4"></div>
-            <p class="text-blue-600 font-semibold animate-pulse">Processando dados...</p>
+            <p class="text-blue-600 font-semibold animate-pulse">Processando...</p>
         </div>
 
-        <!-- CABEÇALHO MOBILE/DESKTOP -->
-        <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden">
+        <!-- CABEÇALHO MOBILE -->
+        <header class="bg-blue-800 text-white shadow-sm p-4 flex justify-between items-center md:hidden">
             <span class="font-bold text-lg">RPPS</span>
-            <button class="text-gray-600"><i class="fas fa-bars"></i></button>
+            <span id="mobile-comp" class="text-sm font-bold bg-blue-700 px-2 py-1 rounded">--/----</span>
         </header>
 
         <!-- CONTEÚDO SCROLLÁVEL -->
@@ -107,18 +116,17 @@
 
                 <!-- Cards de Totais -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Total Folha + 13 -->
+                    <!-- Total Folha -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Obrigações (Folha + 13º)</p>
+                                <p class="text-xs text-gray-500 uppercase font-bold">Obrigações (Folha+13º)</p>
                                 <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-folha">R$ 0,00</h3>
-                                <p class="text-xs text-gray-400 mt-1" id="dash-sub-folha">Normal: 0 | 13º: 0</p>
+                                <p class="text-xs text-gray-400 mt-1" id="dash-sub-folha">Carregando...</p>
                             </div>
                             <div class="p-2 bg-blue-100 rounded-lg text-blue-600"><i class="fas fa-users"></i></div>
                         </div>
                     </div>
-
                     <!-- Outros Bancos -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
                         <div class="flex justify-between items-start">
@@ -129,8 +137,7 @@
                             <div class="p-2 bg-orange-100 rounded-lg text-orange-600"><i class="fas fa-university"></i></div>
                         </div>
                     </div>
-
-                    <!-- Bradesco Estimado -->
+                    <!-- Bradesco -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
                         <div class="flex justify-between items-start">
                             <div>
@@ -140,7 +147,6 @@
                             <div class="p-2 bg-green-100 rounded-lg text-green-600"><i class="fas fa-money-check-alt"></i></div>
                         </div>
                     </div>
-
                     <!-- Consignados -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
                         <div class="flex justify-between items-start">
@@ -153,42 +159,55 @@
                     </div>
                 </div>
 
-                <!-- Tabela de Conferência -->
+                <!-- Conferência -->
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h3 class="font-bold text-lg mb-4 text-gray-800">Conferência da Folha (Cálculo Reverso)</h3>
+                    <h3 class="font-bold text-lg mb-4 text-gray-800">Conferência da Folha</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                                <tr>
-                                    <th class="px-4 py-3">Descrição</th>
-                                    <th class="px-4 py-3 text-right">Valor</th>
-                                    <th class="px-4 py-3 text-center">Status</th>
-                                </tr>
-                            </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <tr>
-                                    <td class="px-4 py-3 font-medium">Total (Folha Normal + 13º Salário)</td>
+                                    <td class="px-4 py-3 font-medium">Total (Folha + 13º)</td>
                                     <td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td>
-                                    <td class="px-4 py-3 text-center">-</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-4 py-3">(-) Soma de Outros Bancos</td>
+                                    <td class="px-4 py-3">(-) Outros Bancos</td>
                                     <td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td>
-                                    <td class="px-4 py-3 text-center">-</td>
                                 </tr>
                                 <tr class="bg-green-50">
-                                    <td class="px-4 py-3 font-bold">(=) Total Previsto Bradesco</td>
+                                    <td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td>
                                     <td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">Calculado</span>
-                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded border border-yellow-200">
-                        <i class="fas fa-info-circle mr-2"></i> <strong>Atenção:</strong> O valor "Previsto Bradesco" deve bater exatamente com o arquivo de remessa do banco.
-                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CONFERÊNCIA PAGAMENTOS (NOVA) -->
+            <div id="view-conferencia" class="view-section hidden-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência de Pagamentos</h2>
+                    <button onclick="carregarConferencia()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4 text-sm text-yellow-800">
+                    <i class="fas fa-info-circle mr-2"></i> Aqui você confere tudo o que foi lançado no mês. Marque o que já foi pago. O que não for marcado ficará como Pendência.
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-3">Origem</th>
+                                <th class="px-6 py-3">Descrição / Nome</th>
+                                <th class="px-6 py-3 text-right">Valor</th>
+                                <th class="px-6 py-3 text-center">Status</th>
+                                <th class="px-6 py-3 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-conferencia" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                    <div id="empty-conferencia" class="p-8 text-center text-gray-500 hidden">Nenhum lançamento neste mês.</div>
                 </div>
             </div>
 
@@ -207,7 +226,8 @@
                             <tr>
                                 <th class="px-6 py-3">Tipo</th>
                                 <th class="px-6 py-3 text-right">Valor Total</th>
-                                <th class="px-6 py-3">Observação</th>
+                                <th class="px-6 py-3">Obs</th>
+                                <th class="px-6 py-3 text-center">Excluir</th>
                             </tr>
                         </thead>
                         <tbody id="lista-folha" class="divide-y divide-gray-100"></tbody>
@@ -216,15 +236,14 @@
                 </div>
             </div>
 
-            <!-- VIEW: 13º SALÁRIO (NOVA) -->
+            <!-- VIEW: 13º SALÁRIO -->
             <div id="view-decimo" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-blue-800">13º Salário</h2>
-                        <p class="text-xs text-gray-500">Registro mensal para Aposentados, Pensionistas e Comissionados</p>
                     </div>
                     <button onclick="toggleModal('modal-decimo')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                        <i class="fas fa-plus mr-2"></i>Adicionar 13º
+                        <i class="fas fa-plus mr-2"></i>Adicionar
                     </button>
                 </div>
                 
@@ -235,6 +254,7 @@
                                 <th class="px-6 py-3">Tipo Beneficiário</th>
                                 <th class="px-6 py-3 text-right">Valor 13º</th>
                                 <th class="px-6 py-3">Observação</th>
+                                <th class="px-6 py-3 text-center">Excluir</th>
                             </tr>
                         </thead>
                         <tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody>
@@ -243,13 +263,18 @@
                 </div>
             </div>
 
-            <!-- VIEW: OUTROS BANCOS -->
+            <!-- VIEW: OUTROS BANCOS (COM IMPORTAÇÃO) -->
             <div id="view-outros" class="view-section hidden-section">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-2xl font-bold">Outros Bancos</h2>
-                    <button onclick="toggleModal('modal-outros')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
-                        <i class="fas fa-plus mr-2"></i>Adicionar
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="importarMesAnterior('OUTROS_BANCOS')" class="bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm shadow">
+                            <i class="fas fa-copy mr-2"></i>Copiar do Mês Anterior
+                        </button>
+                        <button onclick="toggleModal('modal-outros')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow">
+                            <i class="fas fa-plus mr-2"></i>Adicionar
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -261,6 +286,7 @@
                                 <th class="px-6 py-3">Banco</th>
                                 <th class="px-6 py-3 text-right">Valor</th>
                                 <th class="px-6 py-3">Obs</th>
+                                <th class="px-6 py-3 text-center">Excluir</th>
                             </tr>
                         </thead>
                         <tbody id="lista-outros" class="divide-y divide-gray-100"></tbody>
@@ -285,6 +311,7 @@
                                 <th class="px-6 py-3">Tipo Consignado</th>
                                 <th class="px-6 py-3 text-right">Valor</th>
                                 <th class="px-6 py-3">Obs</th>
+                                <th class="px-6 py-3 text-center">Excluir</th>
                             </tr>
                         </thead>
                         <tbody id="lista-consignados" class="divide-y divide-gray-100"></tbody>
@@ -293,40 +320,50 @@
                 </div>
             </div>
 
-            <!-- VIEW: ADMINISTRATIVO (RECORRENTES + OUTROS) -->
+            <!-- VIEW: ASSESSORIAS & DESPESAS (ANTIGO ADM) -->
             <div id="view-adm" class="view-section hidden-section">
                 
                 <!-- Recorrentes -->
                 <div class="mb-8">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-700">Pagamentos Recorrentes</h3>
-                        <button onclick="toggleModal('modal-recorrentes')" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs shadow">
-                            <i class="fas fa-plus mr-1"></i> Novo Recorrente
-                        </button>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-700">Assessorias Mensais (Fixos)</h3>
+                            <p class="text-xs text-gray-500">Contabilidade, Jurídico, Consultorias, etc.</p>
+                        </div>
+                        <div class="flex gap-2">
+                             <button onclick="importarMesAnterior('PAGAMENTOS_RECORRENTES')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 text-xs shadow">
+                                <i class="fas fa-copy mr-1"></i> Copiar Anterior
+                            </button>
+                            <button onclick="toggleModal('modal-recorrentes')" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs shadow">
+                                <i class="fas fa-plus mr-1"></i> Adicionar
+                            </button>
+                        </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
                                 <tr>
                                     <th class="px-6 py-3">Descrição</th>
-                                    <th class="px-6 py-3">Tipo</th>
                                     <th class="px-6 py-3 text-right">Valor</th>
                                     <th class="px-6 py-3 text-center">Status</th>
-                                    <th class="px-6 py-3 text-center">Ação</th>
+                                    <th class="px-6 py-3 text-center">Excluir</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-recorrentes" class="divide-y divide-gray-100"></tbody>
                         </table>
-                        <div id="empty-recorrentes" class="p-8 text-center text-gray-500 hidden">Nenhum recorrente nesta competência.</div>
+                        <div id="empty-recorrentes" class="p-8 text-center text-gray-500 hidden">Nada lançado.</div>
                     </div>
                 </div>
 
                 <!-- Eventuais -->
                 <div>
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-700">Pagamentos Eventuais</h3>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-700">Outras Despesas (Eventuais)</h3>
+                            <p class="text-xs text-gray-500">Consertos, compras únicas, taxas extras.</p>
+                        </div>
                         <button onclick="toggleModal('modal-eventuais')" class="bg-purple-600 text-white px-3 py-1.5 rounded hover:bg-purple-700 text-xs shadow">
-                            <i class="fas fa-plus mr-1"></i> Novo Eventual
+                            <i class="fas fa-plus mr-1"></i> Adicionar
                         </button>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -336,12 +373,12 @@
                                     <th class="px-6 py-3">Descrição</th>
                                     <th class="px-6 py-3 text-right">Valor</th>
                                     <th class="px-6 py-3 text-center">Status</th>
-                                    <th class="px-6 py-3 text-center">Ação</th>
+                                    <th class="px-6 py-3 text-center">Excluir</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-eventuais" class="divide-y divide-gray-100"></tbody>
                         </table>
-                        <div id="empty-eventuais" class="p-8 text-center text-gray-500 hidden">Nenhum pagamento eventual.</div>
+                        <div id="empty-eventuais" class="p-8 text-center text-gray-500 hidden">Nada lançado.</div>
                     </div>
                 </div>
             </div>
@@ -410,7 +447,7 @@
         </div>
     </div>
 
-    <!-- Modal Adicionar 13º (NOVO) -->
+    <!-- Modal Adicionar 13º -->
     <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600">
             <h3 class="font-bold text-lg mb-4 text-blue-800">Adicionar 13º Salário</h3>
@@ -503,10 +540,10 @@
         </div>
     </div>
 
-    <!-- Modal Recorrentes -->
+    <!-- Modal Recorrentes (Sem Status) -->
     <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg mb-4">Adicionar Pagamento Recorrente</h3>
+            <h3 class="font-bold text-lg mb-4">Adicionar Assessoria/Fixo</h3>
             <form onsubmit="handleSubmit(event, 'adicionarRecorrente')">
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
@@ -520,18 +557,9 @@
                         <option value="Outro">Outro</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                        <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Situação Inicial</label>
-                        <select name="situacao" class="w-full border rounded p-2">
-                            <option value="Pendente">Pendente</option>
-                            <option value="Pago">Pago</option>
-                        </select>
-                    </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
+                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
@@ -545,7 +573,7 @@
         </div>
     </div>
 
-     <!-- Modal Eventuais -->
+     <!-- Modal Eventuais (Sem Status) -->
      <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 class="font-bold text-lg mb-4">Adicionar Pagamento Eventual</h3>
@@ -554,18 +582,9 @@
                     <label class="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
                     <input type="text" name="descricao" class="w-full border rounded p-2" required>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
-                        <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Situação Inicial</label>
-                        <select name="situacao" class="w-full border rounded p-2">
-                            <option value="Pendente">Pendente</option>
-                            <option value="Pago">Pago</option>
-                        </select>
-                    </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Valor</label>
+                    <input type="text" name="valor" class="money-mask w-full border rounded p-2" placeholder="0,00" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-500 mb-1">Observação</label>
@@ -581,20 +600,31 @@
 
     <!-- JAVASCRIPT -->
     <script>
-        // CONFIGURAÇÃO
         const API_URL = "https://script.google.com/macros/s/AKfycbwt5wH_wT65wfXyaBc78YK4ZBHcCi7zFATSQRk6yytCTHFlqCLs1Gc7JSS395aYNUmR/exec";
         
         let currentCompetencia = "";
 
         window.onload = function() {
             const today = new Date();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
             const yyyy = today.getFullYear();
-            currentCompetencia = `${mm}/${yyyy}`;
-            document.getElementById('globalCompetencia').value = currentCompetencia;
-            carregarResumo();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            
+            document.getElementById('inputCompetencia').value = `${yyyy}-${mm}`;
+            mudarCompetencia(`${yyyy}-${mm}`);
             setupMoneyMask();
         };
+
+        function mudarCompetencia(valYYYYMM) {
+            if(!valYYYYMM) return;
+            const [year, month] = valYYYYMM.split('-');
+            currentCompetencia = `${month}/${year}`;
+            
+            document.querySelectorAll('.current-comp').forEach(el => el.innerText = currentCompetencia);
+            document.getElementById('mobile-comp').innerText = currentCompetencia;
+            
+            const activeBtn = document.querySelector('.nav-btn.tab-active');
+            if(activeBtn) activeBtn.click();
+        }
 
         function showView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
@@ -604,86 +634,181 @@
             document.getElementById(`btn-${viewName}`).classList.add('tab-active');
 
             if (viewName === 'resumo') carregarResumo();
-            if (viewName === 'folha') carregarListaGenerica('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
-            if (viewName === 'decimo') carregarListaGenerica('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
-            if (viewName === 'outros') carregarListaGenerica('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
-            if (viewName === 'consignados') carregarListaGenerica('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
+            if (viewName === 'conferencia') carregarConferencia();
+            if (viewName === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
+            if (viewName === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
+            if (viewName === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
+            if (viewName === 'consignados') carregarLista('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
             if (viewName === 'adm') {
-                carregarListaGenerica('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente);
-                carregarListaGenerica('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual);
+                carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente);
+                carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual);
             }
             if (viewName === 'pendencias') carregarPendencias();
         }
 
-        function toggleModal(modalId) {
-            document.getElementById(modalId).classList.toggle('hidden');
+        async function importarMesAnterior(sheetTarget) {
+            if(!confirm(`Deseja importar os registros do mês anterior para ${currentCompetencia}? Isso duplicará os valores.`)) return;
+            setLoading(true);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'importarMesAnterior',
+                        sheetTarget: sheetTarget,
+                        competenciaAtual: currentCompetencia
+                    })
+                });
+                const json = await response.json();
+                alert(json.message);
+                if(json.status === 'success') document.querySelector('.nav-btn.tab-active').click();
+            } catch(e) { console.error(e); alert("Erro ao importar."); }
+            finally { setLoading(false); }
         }
 
-        function updateCompetenciaGlobal() {
-            const val = document.getElementById('globalCompetencia').value;
-            if(!/^\d{2}\/\d{4}$/.test(val)) {
-                alert("Formato de competência inválido. Use MM/AAAA");
-                return false;
-            }
-            currentCompetencia = val;
-            document.querySelectorAll('.current-comp').forEach(el => el.innerText = currentCompetencia);
-            return true;
+        async function excluir(sheetName, id) {
+            if(!confirm("Tem certeza que deseja EXCLUIR este registro?")) return;
+            setLoading(true);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'excluirRegistro', sheetName: sheetName, id: id, competencia: currentCompetencia })
+                });
+                const json = await response.json();
+                if(json.status === 'success') document.querySelector('.nav-btn.tab-active').click();
+                else alert("Erro: " + json.message);
+            } catch(e) { console.error(e); } finally { setLoading(false); }
         }
 
-        function carregarDadosAtuais() {
-            if(updateCompetenciaGlobal()) {
-                const activeBtn = document.querySelector('.nav-btn.tab-active');
-                if(activeBtn) activeBtn.click();
-            }
+        // --- Renderizadores ---
+        
+        function getDeleteBtn(sheetName, id) {
+            if(!id) return '';
+            return `<button onclick="excluir('${sheetName}', '${id}')" class="text-red-400 hover:text-red-600 ml-2" title="Excluir"><i class="fas fa-trash"></i></button>`;
         }
+
+        function renderRowFolha(row) {
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold text-blue-600">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-xs">${row[3]}</td><td class="px-6 py-4 text-center">${getDeleteBtn('FOLHA', row[6])}</td></tr>`;
+        }
+        function renderRowDecimo(row) {
+            return `<tr class="hover:bg-blue-50 border-b border-blue-100 last:border-0"><td class="px-6 py-4 font-medium text-blue-900">${row[1]}</td><td class="px-6 py-4 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-blue-500 text-xs">${row[3]}</td><td class="px-6 py-4 text-center">${getDeleteBtn('DECIMO', row[6])}</td></tr>`;
+        }
+        function renderRowOutros(row) {
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-xs text-gray-500">${row[2]}</td><td class="px-6 py-4 text-sm">${row[3]}</td><td class="px-6 py-4 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="px-6 py-4 text-gray-500 text-xs">${row[5]}</td><td class="px-6 py-4 text-center">${getDeleteBtn('OUTROS_BANCOS', row[8])}</td></tr>`;
+        }
+        function renderRowConsig(row) {
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-gray-500 text-xs">${row[3]}</td><td class="px-6 py-4 text-center">${getDeleteBtn('CONSIGNADOS', row[6])}</td></tr>`;
+        }
+        function renderRowRecorrente(row) {
+            // [Comp, Desc, Tipo, Valor, Status, Obs, ID]
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[3])}</td><td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${row[4]}</span></td><td class="px-6 py-4 text-center">${getDeleteBtn('RECORRENTES', row[6])}</td></tr>`;
+        }
+        function renderRowEventual(row) {
+            // [Comp, Desc, Valor, Status, Obs, ID]
+            return `<tr class="hover:bg-gray-50 border-b last:border-0"><td class="px-6 py-4 font-medium">${row[1]}</td><td class="px-6 py-4 text-right font-bold">${formatCurrency(row[2])}</td><td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${row[3]}</span></td><td class="px-6 py-4 text-center">${getDeleteBtn('OUTROS_PGTOS', row[5])}</td></tr>`;
+        }
+
+        // --- CONFERÊNCIA UNIFICADA ---
+        async function carregarConferencia() {
+            setLoading(true);
+            try {
+                const response = await fetch(`${API_URL}?action=getConferencia&competencia=${currentCompetencia}`);
+                const json = await response.json();
+                const tbody = document.getElementById('lista-conferencia');
+                const empty = document.getElementById('empty-conferencia');
+                tbody.innerHTML = '';
+                
+                if(json.status === 'success' && json.data.length > 0) {
+                    empty.classList.add('hidden');
+                    json.data.forEach(item => {
+                        const isPago = item.status === 'Pago';
+                        const btnClass = isPago ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 shadow-md';
+                        const btnText = isPago ? 'Pago <i class="fas fa-check ml-1"></i>' : 'Pagar <i class="fas fa-money-bill-wave ml-1"></i>';
+                        const action = isPago ? '' : `onclick="marcarComoPago('${item.id}', '${item.origem}')"`;
+                        
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 border-b last:border-0 ${isPago ? 'bg-green-50' : ''}">
+                                <td class="px-6 py-4 text-xs font-bold uppercase text-gray-500">${item.origem}</td>
+                                <td class="px-6 py-4 font-medium ${isPago ? 'text-gray-400 line-through' : 'text-gray-900'}">${item.descricao}</td>
+                                <td class="px-6 py-4 text-right font-bold">${formatCurrency(item.valor)}</td>
+                                <td class="px-6 py-4 text-center"><span class="${isPago ? 'text-green-600 bg-green-100' : 'text-yellow-600 bg-yellow-100'} px-2 py-1 rounded text-xs font-bold">${item.status}</span></td>
+                                <td class="px-6 py-4 text-center"><button ${action} class="${btnClass} px-3 py-1.5 rounded text-xs font-bold transition-all" ${isPago ? 'disabled' : ''}>${btnText}</button></td>
+                            </tr>
+                        `;
+                    });
+                } else { empty.classList.remove('hidden'); }
+            } catch(e) { console.error(e); } finally { setLoading(false); }
+        }
+
+        // --- Funções Padrão ---
 
         async function carregarResumo() {
-            updateCompetenciaGlobal();
             setLoading(true);
             try {
                 const response = await fetch(`${API_URL}?action=getResumoMensal&competencia=${currentCompetencia}`);
                 const json = await response.json();
-                
                 if(json.status === 'success') {
-                    // Atualiza Cards
                     document.getElementById('dash-total-folha').innerText = formatCurrency(json.folha.total_geral);
                     document.getElementById('dash-sub-folha').innerText = `Normal: ${formatCurrency(json.folha.total_normal)} | 13º: ${formatCurrency(json.folha.total_decimo)}`;
-                    
                     document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros_bancos);
                     document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco_estimado);
                     document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total);
                     
-                    // Atualiza Tabela
                     document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
                     document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros_bancos);
                     document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco_estimado);
                 }
-            } catch (error) { console.error(error); alert("Erro ao conectar com o servidor."); } 
-            finally { setLoading(false); }
+            } catch (e) { console.error(e); } finally { setLoading(false); }
         }
 
-        async function carregarListaGenerica(sheetName, tbodyId, emptyId, renderFunction) {
+        async function carregarLista(sheetName, tbodyId, emptyId, renderFn) {
             setLoading(true);
             try {
                 const response = await fetch(`${API_URL}?action=getList&sheet=${sheetName}&competencia=${currentCompetencia}`);
                 const json = await response.json();
-                
                 const tbody = document.getElementById(tbodyId);
-                const emptyDiv = document.getElementById(emptyId);
+                const empty = document.getElementById(emptyId);
                 tbody.innerHTML = '';
-
                 if(json.status === 'success' && json.data.length > 0) {
-                    emptyDiv.classList.add('hidden');
-                    json.data.forEach(row => tbody.innerHTML += renderFunction(row));
-                } else {
-                    emptyDiv.classList.remove('hidden');
-                }
-            } catch(e) { console.error(e); } 
-            finally { setLoading(false); }
+                    empty.classList.add('hidden');
+                    json.data.forEach(row => tbody.innerHTML += renderFn(row));
+                } else { empty.classList.remove('hidden'); }
+            } catch(e) { console.error(e); } finally { setLoading(false); }
         }
 
-        async function carregarPendencias() {
+        async function handleSubmit(event, action) {
+            event.preventDefault();
             setLoading(true);
+            const data = Object.fromEntries(new FormData(event.target).entries());
+            data.action = action;
+            data.competencia = currentCompetencia;
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
+                const json = await response.json();
+                if(json.status === 'success') {
+                    alert("Salvo!");
+                    event.target.reset();
+                    toggleModal(event.target.closest('div[id^="modal"]').id);
+                    document.querySelector('.nav-btn.tab-active').click();
+                } else alert("Erro: " + json.message);
+            } catch(e) { console.error(e); alert("Erro comunicação"); } finally { setLoading(false); }
+        }
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function setLoading(active) { document.getElementById('loadingOverlay').classList.toggle('hidden', !active); }
+        function formatCurrency(val) { return parseFloat(val || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+        function setupMoneyMask() {
+            document.querySelectorAll('.money-mask').forEach(input => {
+                input.addEventListener('input', e => {
+                    let v = e.target.value.replace(/\D/g, "");
+                    v = (v/100).toFixed(2) + "";
+                    v = v.replace(".", ",").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                    e.target.value = "R$ " + v;
+                });
+            });
+        }
+        
+        async function carregarPendencias() {
+             setLoading(true);
             try {
                 const response = await fetch(`${API_URL}?action=getPendencias`);
                 const json = await response.json();
@@ -708,110 +833,14 @@
             } catch(e) { console.error(e); } 
             finally { setLoading(false); }
         }
-
-        function renderRowFolha(row) {
-            return `<tr class="hover:bg-gray-50 border-b last:border-0">
-                    <td class="px-6 py-4 font-medium text-gray-900">${row[1]}</td>
-                    <td class="px-6 py-4 text-right font-bold text-blue-600">${formatCurrency(row[2])}</td>
-                    <td class="px-6 py-4 text-gray-500 text-xs">${row[3]}</td>
-                </tr>`;
-        }
-
-        function renderRowDecimo(row) {
-            return `<tr class="hover:bg-blue-50 border-b border-blue-100 last:border-0">
-                    <td class="px-6 py-4 font-medium text-blue-900">${row[1]}</td>
-                    <td class="px-6 py-4 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td>
-                    <td class="px-6 py-4 text-blue-500 text-xs">${row[3]}</td>
-                </tr>`;
-        }
-
-        function renderRowOutros(row) {
-            return `<tr class="hover:bg-gray-50 border-b last:border-0">
-                    <td class="px-6 py-4 font-medium">${row[1]}</td>
-                    <td class="px-6 py-4 text-xs text-gray-500">${row[2]}</td>
-                    <td class="px-6 py-4 text-sm">${row[3]}</td>
-                    <td class="px-6 py-4 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td>
-                    <td class="px-6 py-4 text-gray-500 text-xs">${row[5]}</td>
-                </tr>`;
-        }
-
-        function renderRowConsig(row) {
-            return `<tr class="hover:bg-gray-50 border-b last:border-0">
-                    <td class="px-6 py-4 font-medium">${row[1]}</td>
-                    <td class="px-6 py-4 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td>
-                    <td class="px-6 py-4 text-gray-500 text-xs">${row[3]}</td>
-                </tr>`;
-        }
-
-        function renderRowRecorrente(row) { return renderRowAdmin(row, 6, 1, 2, 3, 4, 'Recorrente'); }
-        function renderRowEventual(row) { return renderRowAdmin(row, 5, 1, null, 2, 3, 'Eventual'); }
-
-        function renderRowAdmin(row, idIndex, descIndex, tipoIndex, valIndex, statusIndex, origem) {
-            const id = row[idIndex];
-            const status = row[statusIndex];
-            const badgeClass = status === 'Pago' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-            const btnAction = status === 'Pendente' 
-                ? `<button onclick="marcarComoPago('${id}', '${origem}')" class="text-green-600 hover:text-green-800 text-xs font-bold border border-green-600 px-2 py-1 rounded">PAGAR</button>` 
-                : `<i class="fas fa-check text-green-500"></i>`;
-            return `<tr class="hover:bg-gray-50 border-b last:border-0">
-                    <td class="px-6 py-4 font-medium text-gray-900">${row[descIndex]} <br> <span class="text-xs text-gray-400">${tipoIndex ? row[tipoIndex] : ''}</span></td>
-                    <td class="px-6 py-4 text-right font-bold">${formatCurrency(row[valIndex])}</td>
-                    <td class="px-6 py-4 text-center"><span class="${badgeClass} px-2 py-1 rounded text-xs font-bold">${status}</span></td>
-                    <td class="px-6 py-4 text-center">${btnAction}</td>
-                </tr>`;
-        }
-
-        async function handleSubmit(event, action) {
-            event.preventDefault();
-            setLoading(true);
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
-            data.action = action;
-            data.competencia = currentCompetencia;
-
-            try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-                const json = await response.json();
-                if(json.status === 'success') {
-                    alert("Salvo com sucesso!");
-                    event.target.reset();
-                    document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
-                    const activeBtn = document.querySelector('.nav-btn.tab-active');
-                    if(activeBtn) activeBtn.click();
-                } else { alert("Erro ao salvar: " + json.message); }
-            } catch(e) { console.error(e); alert("Erro de comunicação."); } 
-            finally { setLoading(false); }
-        }
-
+        
         async function marcarComoPago(id, origem) {
-            if(!confirm("Confirmar o pagamento deste registro?")) return;
+            if(!confirm("Confirmar pagamento?")) return;
             setLoading(true);
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id: id, origem: origem, novoStatus: 'Pago' }) });
-                const json = await response.json();
-                if(json.status === 'success') document.querySelector('.nav-btn.tab-active').click();
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus: 'Pago' }) });
+                carregarConferencia(); // Recarrega a tela de conferência
             } catch(e) { console.error(e); } finally { setLoading(false); }
-        }
-
-        function setLoading(active) {
-            document.getElementById('loadingOverlay').classList.toggle('hidden', !active);
-        }
-
-        function formatCurrency(val) {
-            if(val === undefined || val === null) return "R$ 0,00";
-            return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function setupMoneyMask() {
-            document.querySelectorAll('.money-mask').forEach(input => {
-                input.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, "");
-                    value = (value / 100).toFixed(2) + "";
-                    value = value.replace(".", ",");
-                    value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-                    e.target.value = "R$ " + value;
-                });
-            });
         }
     </script>
 </body>
