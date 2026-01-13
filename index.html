@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controlo de Pagamentos - Financeiro</title>
+    
+    <!-- Tailwind CSS para Estilo Rápido e Responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card-value { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .hidden-section { display: none; }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Transições suaves */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- NAV BAR -->
+    <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2 font-bold text-xl cursor-pointer" onclick="router('dashboard')">
+                    <i data-lucide="wallet" class="w-6 h-6 text-blue-400"></i>
+                    <span>Finanças<span class="text-blue-400">Pro</span></span>
+                </div>
+                <!-- Menu Desktop -->
+                <div class="hidden md:flex space-x-6 text-sm font-medium">
+                    <button onclick="router('dashboard')" class="hover:text-blue-300 transition nav-btn" id="btn-dashboard">Dashboard</button>
+                    <button onclick="router('folha')" class="hover:text-blue-300 transition nav-btn" id="btn-folha">Lançar Folha</button>
+                    <button onclick="router('recorrentes')" class="hover:text-blue-300 transition nav-btn" id="btn-recorrentes">Recorrentes</button>
+                    <button onclick="router('pessoas')" class="hover:text-blue-300 transition nav-btn" id="btn-pessoas">Outros Bancos</button>
+                </div>
+                <!-- Menu Mobile Button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="text-white hover:text-blue-300 focus:outline-none">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-800 pb-4 shadow-inner">
+            <button onclick="router('dashboard')" class="block py-3 px-4 text-sm hover:bg-slate-700 w-full text-left border-b border-slate-700">Dashboard</button>
+            <button onclick="router('folha')" class="block py-3 px-4 text-sm hover:bg-slate-700 w-full text-left border-b border-slate-700">Lançar Folha</button>
+            <button onclick="router('recorrentes')" class="block py-3 px-4 text-sm hover:bg-slate-700 w-full text-left border-b border-slate-700">Recorrentes</button>
+            <button onclick="router('pessoas')" class="block py-3 px-4 text-sm hover:bg-slate-700 w-full text-left">Outros Bancos</button>
+        </div>
+    </nav>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-6xl mx-auto px-4 py-6 min-h-[calc(100vh-80px)]">
+
+        <!-- STATUS MESSAGE -->
+        <div id="status-msg" class="hidden mb-4 p-4 rounded-lg text-sm font-medium shadow-sm transition-all duration-300 flex items-center gap-2"></div>
+
+        <!-- ================== VIEW: DASHBOARD ================== -->
+        <section id="view-dashboard" class="fade-in">
+            <!-- Header Dashboard -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6 text-slate-500"></i> Visão Geral
+                </h2>
+                <div class="flex items-center space-x-2 bg-white p-1.5 rounded-lg shadow-sm border border-slate-200">
+                    <button onclick="mudarMes(-1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <!-- Input de Mês com valor padrão -->
+                    <input type="month" id="dash-month" class="font-bold text-slate-700 outline-none bg-transparent text-center cursor-pointer uppercase text-sm" onchange="carregarDashboard()">
+                    <button onclick="mudarMes(1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <!-- Cards Principais -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Card Folha Total -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600 hover:shadow-md transition">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Total Folha (Oficial)</div>
+                    <div id="dash-total-folha" class="text-2xl font-bold text-slate-800 mt-2 card-value">R$ 0,00</div>
+                    <div id="dash-status-folha" class="text-xs text-red-500 mt-2 font-medium flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3 h-3"></i> A carregar...
+                    </div>
+                </div>
+
+                <!-- Card Bradesco -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500 hover:shadow-md transition">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pagamento Bradesco</div>
+                    <div id="dash-total-bradesco" class="text-2xl font-bold text-emerald-600 mt-2 card-value">R$ 0,00</div>
+                    <div class="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                        <i data-lucide="calculator" class="w-3 h-3"></i> Calculado automaticamente
+                    </div>
+                </div>
+
+                <!-- Card Outros Bancos -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 hover:shadow-md transition">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pagamento Outros Bancos</div>
+                    <div id="dash-total-outros" class="text-2xl font-bold text-orange-600 mt-2 card-value">R$ 0,00</div>
+                    <div class="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                        <i data-lucide="users" class="w-3 h-3"></i> Baseado no cadastro fixo
+                    </div>
+                </div>
+
+                <!-- Card Recorrentes -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500 hover:shadow-md transition">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Contas Recorrentes</div>
+                    <div id="dash-total-recorrentes" class="text-2xl font-bold text-purple-600 mt-2 card-value">R$ 0,00</div>
+                    <div class="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                        <i data-lucide="repeat" class="w-3 h-3"></i> Fornecedores / Fixos
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalhe Outros Bancos -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4"></i> Detalhamento: Outros Bancos
+                    </h3>
+                    <span class="text-xs text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">Valores deduzidos da folha total</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-3">Nome</th>
+                                <th class="px-6 py-3">Banco Destino</th>
+                                <th class="px-6 py-3 text-right">Valor Deduzido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-table-outros" class="divide-y divide-slate-100 bg-white">
+                            <!-- JS preenche aqui -->
+                            <tr><td colspan="3" class="px-6 py-8 text-center text-slate-400">A carregar dados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW: FOLHA MENSAL ================== -->
+        <section id="view-folha" class="hidden-section fade-in">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6 text-slate-500"></i> Lançamento de Folha
+                </h2>
+                <!-- DATA EDITÁVEL PARA GARANTIR O LANÇAMENTO NO MÊS CORRETO -->
+                <div class="flex items-center gap-2 bg-blue-50 text-blue-800 border border-blue-200 py-2 px-3 rounded-lg shadow-sm">
+                    <span class="text-xs font-bold uppercase text-blue-600 tracking-wider">Mês Referência:</span>
+                    <input type="month" id="folha-mes-input" class="bg-transparent font-bold text-blue-800 outline-none cursor-pointer text-sm">
+                </div>
+            </div>
+
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 max-w-3xl mx-auto">
+                <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-8 rounded-r text-amber-800 text-sm flex gap-3 items-start">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <p class="font-bold">Atenção aos valores oficiais</p>
+                        <p>Preencha os valores totais exatos da folha para o mês selecionado acima. Estes valores são a "verdade absoluta" e <strong>nunca serão alterados automaticamente</strong>.</p>
+                    </div>
+                </div>
+                
+                <form id="form-folha" onsubmit="salvarFolha(event)">
+                    <div class="space-y-8">
+                        <!-- Aposentados -->
+                        <div class="bg-slate-50 p-5 rounded-lg border border-slate-100">
+                            <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Aposentados</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor Mensal Folha</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="folha_aposentados" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor 13º Salário</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="d13_aposentados" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pensionistas -->
+                        <div class="bg-slate-50 p-5 rounded-lg border border-slate-100">
+                            <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Pensionistas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor Mensal Folha</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="folha_pensionistas" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor 13º Salário</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="d13_pensionistas" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comissionados -->
+                        <div class="bg-slate-50 p-5 rounded-lg border border-slate-100">
+                            <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i> Comissionados</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor Mensal Folha</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="folha_comissionados" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor 13º Salário</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                        <input type="number" step="0.01" name="d13_comissionados" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="0,00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end pt-6 border-t border-slate-100">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition flex items-center gap-2 transform active:scale-95">
+                            <i data-lucide="save" class="w-4 h-4"></i> Salvar Lançamento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================== VIEW: RECORRENTES ================== -->
+        <section id="view-recorrentes" class="hidden-section fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="repeat" class="w-6 h-6 text-slate-500"></i> Pagamentos Recorrentes
+                </h2>
+                <button onclick="toggleModal('modal-recorrente', true)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-5 rounded-lg shadow-sm flex items-center gap-2 transition hover:shadow">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Novo Pagamento
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4">Descrição</th>
+                                <th class="px-6 py-4">Tipo</th>
+                                <th class="px-6 py-4">Valor</th>
+                                <th class="px-6 py-4">Banco</th>
+                                <th class="px-6 py-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-recorrentes" class="divide-y divide-slate-100 bg-white">
+                            <!-- JS preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW: PESSOAS (OUTROS BANCOS) ================== -->
+        <section id="view-pessoas" class="hidden-section fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="users" class="w-6 h-6 text-slate-500"></i> Pessoas (Outros Bancos)
+                </h2>
+                <button onclick="toggleModal('modal-pessoa', true)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-5 rounded-lg shadow-sm flex items-center gap-2 transition hover:shadow">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nova Pessoa
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4">Nome</th>
+                                <th class="px-6 py-4">Banco Destino</th>
+                                <th class="px-6 py-4">Tipo</th>
+                                <th class="px-6 py-4">Valor Base</th>
+                                <th class="px-6 py-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-pessoas" class="divide-y divide-slate-100 bg-white">
+                            <!-- JS preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL RECORRENTE -->
+    <div id="modal-recorrente" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden z-[60] flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in border border-slate-200">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-bold text-slate-800">Adicionar Recorrente</h3>
+                <button onclick="toggleModal('modal-recorrente', false)" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarRecorrente(event)">
+                <input type="hidden" name="id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Descrição</label>
+                        <input name="descricao" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Internet Fibra" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Tipo de Despesa</label>
+                        <select name="tipo" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="Fornecedor">Fornecedor</option>
+                            <option value="Assessoria">Assessoria</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Valor Mensal</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                            <input name="valor" type="number" step="0.01" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0,00" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Banco Pagador</label>
+                        <input name="banco" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Bradesco">
+                    </div>
+                    <label class="flex items-center gap-2 p-2 bg-slate-50 rounded cursor-pointer border border-slate-100">
+                        <input name="ativo" type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-slate-700">Pagamento Ativo?</span>
+                    </label>
+                </div>
+                <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="toggleModal('modal-recorrente', false)" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm transition">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PESSOA -->
+    <div id="modal-pessoa" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden z-[60] flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in border border-slate-200">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-bold text-slate-800">Adicionar Pessoa (Outro Banco)</h3>
+                <button onclick="toggleModal('modal-pessoa', false)" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarPessoa(event)">
+                <input type="hidden" name="id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Nome Completo</label>
+                        <input name="nome" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nome do Beneficiário" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Tipo</label>
+                        <select name="tipo" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="Aposentado">Aposentado</option>
+                            <option value="Pensionista">Pensionista</option>
+                            <option value="Comissionado">Comissionado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Banco de Destino</label>
+                        <input name="banco" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Caixa, BB" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Valor Mensal Base (Dedução)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-400">R$</span>
+                            <input name="valor_base" type="number" step="0.01" class="w-full pl-9 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0,00" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center gap-2 p-2 bg-slate-50 rounded cursor-pointer border border-slate-100">
+                            <input name="recebe_13" type="checkbox" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-slate-700">Recebe 13º?</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-slate-50 rounded cursor-pointer border border-slate-100">
+                            <input name="ativo" type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-slate-700">Ativo?</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="toggleModal('modal-pessoa', false)" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm transition">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // CONFIGURAÇÃO - URL da API
+        const API_URL = "https://script.google.com/macros/s/AKfycbwt5wH_wT65wfXyaBc78YK4ZBHcCi7zFATSQRk6yytCTHFlqCLs1Gc7JSS395aYNUmR/exec";
+        
+        // Função para obter o mês local correto (Formato YYYY-MM)
+        // Evita usar UTC para não pegar o dia anterior por causa do fuso
+        function getLocalMonthISO() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        // ESTADO GLOBAL
+        let state = {
+            view: 'dashboard',
+            mes: getLocalMonthISO() // Inicia com o mês atual local
+        };
+
+        // INICIALIZAÇÃO
+        window.onload = () => {
+            lucide.createIcons();
+            
+            // Define o valor inicial dos inputs de data
+            document.getElementById('dash-month').value = state.mes;
+            document.getElementById('folha-mes-input').value = state.mes;
+            
+            router('dashboard');
+        };
+
+        // ROTEAMENTO SIMPLES
+        function router(viewName) {
+            state.view = viewName;
+            
+            // UI Update - Troca de seções
+            document.querySelectorAll('section').forEach(el => el.classList.add('hidden-section'));
+            const activeSection = document.getElementById(`view-${viewName}`);
+            activeSection.classList.remove('hidden-section');
+            
+            // Atualiza Menu Navegação
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('text-blue-300', 'bg-slate-800', 'rounded-lg', 'px-3', 'py-1');
+                el.classList.add('hover:text-blue-300');
+            });
+            const btn = document.getElementById(`btn-${viewName}`);
+            if(btn) {
+                // Estilo "pill" no menu ativo
+                btn.classList.add('text-blue-300', 'bg-slate-800', 'rounded-lg', 'px-3', 'py-1');
+                btn.classList.remove('hover:text-blue-300');
+            }
+
+            // Esconder Menu Mobile se estiver aberto
+            document.getElementById('mobile-menu').classList.add('hidden');
+
+            // Lógica Específica da View
+            if(viewName === 'dashboard') carregarDashboard();
+            if(viewName === 'recorrentes') carregarRecorrentes();
+            if(viewName === 'pessoas') carregarPessoas();
+            
+            if(viewName === 'folha') {
+                // Sincroniza o input da tela de folha com o mês que estava no dashboard
+                // Mas permite que o utilizador altere livremente depois
+                document.getElementById('folha-mes-input').value = state.mes;
+            }
+        }
+
+        // --- DASHBOARD ---
+        async function carregarDashboard() {
+            // Pega o valor do input do dashboard
+            const mesInput = document.getElementById('dash-month').value;
+            state.mes = mesInput;
+            
+            setLoading(true);
+            try {
+                // Reset visual enquanto carrega
+                document.getElementById('dash-total-folha').innerText = "...";
+                document.getElementById('dash-status-folha').innerHTML = "A carregar...";
+                
+                const res = await fetch(`${API_URL}?action=getDashboard&mes=${state.mes}`);
+                const data = await res.json();
+                
+                if(data.status === 'error') throw new Error(data.message);
+
+                // Preencher Cards com os valores da API
+                document.getElementById('dash-total-folha').innerText = formatMoeda(data.folha.total_oficial);
+                document.getElementById('dash-total-bradesco').innerText = formatMoeda(data.folha.calculado_bradesco);
+                document.getElementById('dash-total-outros').innerText = formatMoeda(data.folha.calculado_outros);
+                document.getElementById('dash-total-recorrentes').innerText = formatMoeda(data.total_recorrentes);
+                
+                // Status (Lançada vs Não Lançada)
+                const statusEl = document.getElementById('dash-status-folha');
+                if (data.folha.lancada) {
+                    statusEl.innerHTML = `<i data-lucide="check-circle" class="w-3 h-3"></i> Lançada e Calculada`;
+                    statusEl.className = "text-xs text-emerald-600 mt-2 font-medium flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded w-fit";
+                } else {
+                    statusEl.innerHTML = `<i data-lucide="alert-circle" class="w-3 h-3"></i> Não Lançada`;
+                    statusEl.className = "text-xs text-red-500 mt-2 font-medium flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded w-fit";
+                }
+                lucide.createIcons();
+
+                // Tabela Detalhe Outros
+                const tbody = document.getElementById('dash-table-outros');
+                tbody.innerHTML = '';
+                if(data.detalhe_outros.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400">Nenhum registo ativo em Outros Bancos</td></tr>';
+                } else {
+                    data.detalhe_outros.forEach(item => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-3 font-medium text-slate-700">${item.nome}</td>
+                                <td class="px-6 py-3 text-slate-500 text-xs uppercase tracking-wide font-bold">${item.banco}</td>
+                                <td class="px-6 py-3 text-right font-mono text-slate-600">${formatMoeda(item.valor)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+            } catch (error) {
+                showMsg('Erro ao carregar dados: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function mudarMes(delta) {
+            // Lógica robusta para avançar/retroceder mês
+            const currentParts = state.mes.split('-');
+            // Cria data no dia 02 para evitar problemas de fuso no dia 01
+            const current = new Date(parseInt(currentParts[0]), parseInt(currentParts[1]) - 1, 2);
+            
+            current.setMonth(current.getMonth() + delta);
+            
+            const year = current.getFullYear();
+            const month = String(current.getMonth() + 1).padStart(2, '0');
+            state.mes = `${year}-${month}`;
+            
+            document.getElementById('dash-month').value = state.mes;
+            carregarDashboard();
+        }
+
+        // --- FOLHA ---
+        async function salvarFolha(e) {
+            e.preventDefault();
+            setLoading(true);
+            const form = e.target;
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData.entries());
+            
+            // IMPORTANTE: Pega o mês que está visível no input da tela de folha
+            // O utilizador pode ter mudado a data aqui, diferente do dashboard
+            const mesSelecionadoNaTela = document.getElementById('folha-mes-input').value;
+            payload.mes = mesSelecionadoNaTela;
+
+            try {
+                const res = await fetch(`${API_URL}?action=saveFolha`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    showMsg('Folha lançada com sucesso!', 'success');
+                    form.reset();
+                    
+                    // Sincroniza o estado global com o mês que acabámos de salvar
+                    state.mes = mesSelecionadoNaTela;
+                    document.getElementById('dash-month').value = state.mes;
+                    
+                    // Redireciona para o dashboard para ver os resultados
+                    router('dashboard'); 
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                showMsg('Erro ao salvar: ' + error, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // --- RECORRENTES ---
+        async function carregarRecorrentes() {
+            setLoading(true);
+            const tbody = document.getElementById('table-recorrentes');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><div class="loader mx-auto"></div></td></tr>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=getRecorrentes`);
+                const lista = await res.json();
+                
+                tbody.innerHTML = '';
+                if(lista.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum pagamento recorrente registado.</td></tr>';
+                     return;
+                }
+
+                lista.forEach(item => { 
+                    // Estrutura array GAS: [id, desc, tipo, valor, periodicidade, banco, ativo, data]
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-50 last:border-0 transition">
+                            <td class="px-6 py-4 font-medium text-slate-700">${item[1]}</td>
+                            <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-bold uppercase">${item[2]}</span></td>
+                            <td class="px-6 py-4 font-mono font-medium text-slate-700">${formatMoeda(item[3])}</td>
+                            <td class="px-6 py-4 text-sm text-slate-500">${item[5]}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="deletarItem('${item[0]}', 'deleteRecorrente', carregarRecorrentes)" class="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                lucide.createIcons();
+            } catch(e) { console.error(e); showMsg('Erro ao listar recorrentes.', 'error'); } finally { setLoading(false); }
+        }
+
+        async function salvarRecorrente(e) {
+            e.preventDefault();
+            await salvarGenerico(e, 'saveRecorrente', 'modal-recorrente', carregarRecorrentes);
+        }
+
+        // --- PESSOAS ---
+        async function carregarPessoas() {
+            setLoading(true);
+            const tbody = document.getElementById('table-pessoas');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><div class="loader mx-auto"></div></td></tr>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=getPessoas`);
+                const lista = await res.json();
+                
+                tbody.innerHTML = '';
+                if(lista.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum registo encontrado.</td></tr>';
+                     return;
+                }
+
+                lista.forEach(item => { 
+                    // GAS: [id, nome, tipo, recebe13, banco, valor_base, ativo]
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-50 last:border-0 transition">
+                            <td class="px-6 py-4 font-medium text-slate-700">${item[1]}</td>
+                            <td class="px-6 py-4 font-bold text-blue-600 text-xs uppercase">${item[4]}</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">${item[2]}</td>
+                            <td class="px-6 py-4 font-mono font-medium text-slate-700">${formatMoeda(item[5])}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="deletarItem('${item[0]}', 'deletePessoa', carregarPessoas)" class="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                lucide.createIcons();
+            } catch(e) { console.error(e); showMsg('Erro ao listar pessoas.', 'error'); } finally { setLoading(false); }
+        }
+
+        async function salvarPessoa(e) {
+            e.preventDefault();
+            await salvarGenerico(e, 'savePessoa', 'modal-pessoa', carregarPessoas);
+        }
+
+        // --- GENÉRICOS ---
+        async function salvarGenerico(e, action, modalId, callbackReload) {
+            setLoading(true);
+            const formData = new FormData(e.target);
+            // Checkbox fix: se não estiver marcado, não vem no FormData, então forçamos
+            const payload = Object.fromEntries(formData.entries());
+            
+            // Tratamento específico para checkboxes conhecidos
+            if(!payload.ativo && document.querySelector(`#${modalId} [name=ativo]`) ) payload.ativo = false;
+            if(!payload.recebe_13 && document.querySelector(`#${modalId} [name=recebe_13]`) ) payload.recebe_13 = false;
+
+            try {
+                const res = await fetch(`${API_URL}?action=${action}`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    toggleModal(modalId, false);
+                    e.target.reset();
+                    showMsg('Salvo com sucesso!', 'success');
+                    if(callbackReload) callbackReload();
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            } catch (error) {
+                alert('Erro de conexão: ' + error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function deletarItem(id, action, callbackReload) {
+            if(!confirm("Tem a certeza que deseja excluir este registo?")) return;
+            setLoading(true);
+            try {
+                // Apps Script exige POST para ações de escrita, mas passamos ID no body
+                const res = await fetch(`${API_URL}?action=${action}`, {
+                    method: 'POST',
+                    body: JSON.stringify({id: id})
+                });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    showMsg('Item removido.', 'success');
+                    if(callbackReload) callbackReload();
+                } else {
+                    showMsg('Erro: ' + data.message, 'error');
+                }
+            } catch(e) { showMsg('Erro de rede: ' + e, 'error'); } 
+            finally { setLoading(false); }
+        }
+
+        // --- HELPERS UI ---
+        function toggleModal(id, show) {
+            const el = document.getElementById(id);
+            if(show) {
+                el.classList.remove('hidden');
+                // Foco no primeiro input
+                setTimeout(() => {
+                    const firstInput = el.querySelector('input');
+                    if(firstInput) firstInput.focus();
+                }, 100);
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        function setLoading(isLoading) {
+            const body = document.body;
+            isLoading ? body.style.cursor = 'wait' : body.style.cursor = 'default';
+        }
+
+        function showMsg(text, type) {
+            const el = document.getElementById('status-msg');
+            el.innerHTML = text; // Permite HTML para ícones
+            
+            // Reset classes
+            el.className = 'mb-4 p-4 rounded-lg text-sm font-medium shadow-sm transition-all duration-300 flex items-center gap-2';
+            
+            if(type === 'error') {
+                el.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+                if(!text.includes('<i')) el.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5"></i> ${text}`;
+            } else {
+                el.classList.add('bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200');
+                if(!text.includes('<i')) el.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> ${text}`;
+            }
+            
+            el.classList.remove('hidden');
+            lucide.createIcons();
+            
+            // Auto hide após 4 segundos
+            setTimeout(() => {
+                el.classList.add('hidden');
+            }, 4000);
+        }
+
+        function formatMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+        }
+
+        function formatMonth(yyyyMm) {
+            const [ano, mes] = yyyyMm.split('-');
+            const date = new Date(ano, mes - 1);
+            // Capitalizar primeira letra
+            const str = date.toLocaleString('pt-PT', { month: 'long', year: 'numeric' });
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+</html>
