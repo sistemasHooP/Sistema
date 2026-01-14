@@ -58,7 +58,7 @@
             const json = await res.json();
             if (json.status === 'success') { CACHE[cacheKey] = json; }
             return json;
-        } catch(e) { console.error(e); return {status:'error'}; }
+        } catch(e) { console.error("Erro Fetch:", e); return {status:'error'}; }
     }
     
     function invalidateCache() { CACHE = {}; }
@@ -66,6 +66,8 @@
     // --- 3. CARREGAMENTO DE DADOS INICIAIS ---
 
     async function preCarregarDados() {
+        console.log("Iniciando pré-carregamento de dados...");
+        
         // 1. Carrega Configurações (Para o PDF)
         const conf = await fetchData('getConfiguracao');
         if(conf.status === 'success') {
@@ -373,12 +375,15 @@
         } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
     }
     
-    // --- 8. SISTEMA E LOGIN ---
+    // --- 8. SISTEMA E LOGIN (CORRIGIDO) ---
 
     function liberarAcesso() {
+        console.log("Liberando acesso ao sistema...");
         document.getElementById('login-screen').style.display = 'none';
-        // AQUI É O PULO DO GATO: Só mostra o sistema quando autenticado
-        document.getElementById('sistema-wrapper').style.display = 'flex';
+        
+        // FORÇA O DISPLAY FLEX NO SISTEMA
+        const sistema = document.getElementById('sistema-wrapper');
+        sistema.style.display = 'flex';
         
         document.getElementById('user-display').innerHTML = `<i class="fas fa-user-circle mr-2"></i>Olá, <strong>${currentUser}</strong>`;
         
@@ -392,30 +397,39 @@
 
     function handleLogin(e) { 
         e.preventDefault(); 
-        const btn=e.target.querySelector('button'); 
-        btn.disabled=true; btn.innerText='Entrando...';
+        console.log("Tentando login...");
+        
+        const btn = e.target.querySelector('button'); 
+        btn.disabled = true; 
+        btn.innerText = 'Entrando...';
+        
         const data = Object.fromEntries(new FormData(e.target).entries()); 
-        data.action='login';
+        data.action = 'login';
         
         fetch(API_URL, {method:'POST', body:JSON.stringify(data)})
-        .then(r=>r.json())
-        .then(j=>{
-            if(j.status==='success'){ 
+        .then(r => r.json())
+        .then(j => {
+            if(j.status === 'success'){ 
+                console.log("Login sucesso!");
                 localStorage.setItem('rpps_token', j.token); 
                 localStorage.setItem('rpps_user', j.usuario); 
                 authToken = j.token;
                 currentUser = j.usuario;
                 liberarAcesso();
             } else { 
-                document.getElementById('login-msg').innerText=j.message; 
+                console.log("Login falhou:", j.message);
+                document.getElementById('login-msg').innerText = j.message; 
                 document.getElementById('login-msg').classList.remove('hidden'); 
-                btn.disabled=false; btn.innerText='ENTRAR'; 
+                btn.disabled = false; 
+                btn.innerText = 'ENTRAR'; 
             }
         })
         .catch(e => {
-             document.getElementById('login-msg').innerText="Erro de conexão"; 
+             console.error("Erro Login:", e);
+             document.getElementById('login-msg').innerText = "Erro de conexão"; 
              document.getElementById('login-msg').classList.remove('hidden'); 
-             btn.disabled=false; btn.innerText='ENTRAR';
+             btn.disabled = false; 
+             btn.innerText = 'ENTRAR';
         });
     }
 
@@ -434,25 +448,34 @@
 
     // --- INIT ---
     window.onload = function() {
+        console.log("Sistema iniciado.");
+        
+        // Se não tiver token, garante que o sistema está oculto
         if(!authToken) { 
-            // Se não tem token, garante que o sistema tá escondido e login visivel
+            console.log("Sem token. Exibindo login.");
             document.getElementById('login-screen').style.display = 'flex'; 
             document.getElementById('sistema-wrapper').style.display = 'none';
             return; 
         }
         
-        // Se tem token, tenta validar e liberar
+        // Se tiver token, tenta validar
+        console.log("Token encontrado. Validando...");
         fetch(`${API_URL}?action=verificarToken&token=${authToken}`)
         .then(r => r.json())
         .then(j => {
             if(j.status === 'success') {
+                console.log("Sessão válida.");
                 currentUser = j.usuario;
                 liberarAcesso();
             } else {
-                logout(); // Token inválido
+                console.log("Sessão inválida.");
+                logout(); 
             }
         })
-        .catch(() => logout());
+        .catch(e => {
+            console.error("Erro na validação do token:", e);
+            logout();
+        });
     };
     
     // Funções Placeholder e Modais Extras
@@ -467,17 +490,17 @@
         }
     });}
     function carregarPendencias() { fetchData('getPendencias').then(renderPendencias); }
-    function renderPendencias(json) { /* simplificado */ 
+    function renderPendencias(json) { 
         const c=document.getElementById('pendencias-container'); const e=document.getElementById('empty-pendencias'); c.innerHTML='';
         if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(r => c.innerHTML+=`<div class="p-4 bg-white border-l-4 border-red-500 shadow mb-2 flex justify-between"><div><span class="font-bold block">${r.descricao}</span><span class="text-xs text-gray-500">${r.origem} - ${r.competencia}</span></div><span class="font-bold text-red-600">${formatCurrency(r.valor)}</span></div>`); } else { e.classList.remove('hidden'); }
     }
     function carregarConferencia() { fetchData('getConferencia').then(renderConferencia); }
-    function renderConferencia(json) { /* simplificado */
+    function renderConferencia(json) { 
         const c=document.getElementById('conferencia-container'); const e=document.getElementById('empty-conferencia'); c.innerHTML='';
         if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(r => c.innerHTML+=`<div class="p-4 bg-white border-l-4 ${r.status==='Pago'?'border-green-500 bg-green-50':'border-gray-300'} shadow mb-2 flex justify-between items-center"><div><span class="font-bold block ${r.status==='Pago'?'line-through text-gray-400':''}">${r.descricao}</span><span class="text-xs text-gray-500">${r.origem}</span></div><div class="text-right"><span class="block font-bold">${formatCurrency(r.valor)}</span><span class="text-xs">${r.status}</span></div></div>`); } else { e.classList.remove('hidden'); }
     }
     function carregarGuias() { fetchData('getGuiasDetalhadas').then(renderGuias); }
-    function renderGuias(json) { /* simplificado */
+    function renderGuias(json) { 
         const c=document.getElementById('container-guias'); const e=document.getElementById('empty-guias'); c.innerHTML='';
         if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(g => c.innerHTML+=`<div class="p-4 bg-white shadow rounded border-l-4 border-purple-600 mb-4"><h3 class="font-bold">${g.tipo}</h3><p>Devido: ${formatCurrency(g.totalDevido)} | Pago: ${formatCurrency(g.totalPago)}</p></div>`); } else { e.classList.remove('hidden'); }
     }
