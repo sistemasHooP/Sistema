@@ -81,11 +81,12 @@
             renderListaServidores(serv.data);
         }
 
-        // 3. Carrega Dados da Competência Atual
+        // 3. Carrega Dados da Competência Atual e Background
         fetchData('getResumoMensal').then(renderResumo);
         fetchData('getList', `sheet=HISTORICO_MARGEM`).then(json => renderListaMargem(json));
-        // Outros carregamentos em background
-        ['FOLHA_PAGAMENTO', 'DECIMO_TERCEIRO', 'OUTROS_BANCOS', 'CONSIGNADOS', 'PAGAMENTOS_RECORRENTES', 'IMPOSTO_RENDA'].forEach(l => fetchData('getList', `sheet=${l}`));
+        
+        const backgroundLists = ['FOLHA_PAGAMENTO', 'DECIMO_TERCEIRO', 'OUTROS_BANCOS', 'CONSIGNADOS', 'PAGAMENTOS_RECORRENTES', 'IMPOSTO_RENDA'];
+        backgroundLists.forEach(l => fetchData('getList', `sheet=${l}`));
     }
 
     // --- 4. CONFIGURAÇÕES E SERVIDORES ---
@@ -219,9 +220,11 @@
         const inst = configData.nomeInst || "INSTITUTO DE PREVIDÊNCIA";
         const cnpj = configData.cnpj || "00.000.000/0001-00";
         const endereco = configData.endereco || "Endereço não configurado";
-        const cidade = configData.cidade ? configData.cidade.split('/')[0] : "Cidade";
+        const cidadeFull = configData.cidade || "Cidade/UF";
+        const cidadeNome = cidadeFull.split('/')[0];
         const diretor = configData.diretor || "__________________________";
         const cargo = configData.cargo || "Diretor(a)";
+        const contato = configData.contato || "";
         
         // Data por extenso
         const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -243,7 +246,7 @@
                         <br>
                         <p>A presente carta tem validade de 30 (trinta) dias após a data de emissão.</p>
                         <br><br>
-                        <p align="right">${cidade}, ${hoje}.</p>
+                        <p align="right">${cidadeNome}, ${hoje}.</p>
                     </div>
 
                     <div class="doc-signature">
@@ -255,25 +258,20 @@
 
                     <div class="doc-footer">
                         <p><strong>${inst}</strong></p>
-                        <p>${endereco} - ${configData.cidade || ''}</p>
-                        <p>${configData.contato || ''}</p>
+                        <p>${endereco} - ${cidadeFull}</p>
+                        <p>${contato}</p>
                     </div>
                 </div>
             </div>
         `;
 
         // Injeta no body, imprime e remove
-        const oldBody = document.body.innerHTML;
-        const mainContent = document.getElementById('mainContent');
-        
-        // Cria um elemento temporário para impressão
         const printContainer = document.createElement('div');
         printContainer.innerHTML = printHtml;
         document.body.appendChild(printContainer);
 
         window.print();
 
-        // Remove o elemento após impressão
         document.body.removeChild(printContainer);
     }
 
@@ -287,13 +285,21 @@
         
         if(view === 'resumo') carregarResumo();
         else if(view === 'margem') carregarLista('HISTORICO_MARGEM', 'lista-margem', 'empty-margem', renderListaMargem);
-        else if(view === 'servidores') preCarregarDados(); // Atualiza lista
+        else if(view === 'servidores') preCarregarDados();
         else if(view === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
         else if(view === 'config') preencherFormConfig(configData);
-        // ... outros carregamentos (mantidos da versão anterior)
         else if(view === 'pendencias') carregarPendencias();
         else if(view === 'conferencia') carregarConferencia();
         else if(view === 'guias') carregarGuias();
+        // Outras views (decimo, outros, consignados...) carregam por lista simples quando clicadas
+        else if(view === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
+        else if(view === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
+        else if(view === 'consignados') carregarLista('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
+        else if(view === 'adm') { 
+            carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente); 
+            carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual); 
+        }
+        else if(view === 'imposto') carregarLista('IMPOSTO_RENDA', 'lista-imposto', 'empty-imposto', renderRowImposto);
     }
 
     async function carregarLista(sheet, tbodyId, emptyId, renderFn) {
@@ -305,17 +311,13 @@
         if(json.status === 'success' && json.data.length > 0) {
             empty.classList.add('hidden');
             if(renderFn) {
-                 // Renderização Customizada (Margem e Servidores têm suas próprias funções acima)
-                 // Aqui usamos para as listas padrões financeiras
                  let sumBruto=0, sumDesc=0, sumLiq=0;
                  json.data.forEach(r => { 
                     tbody.innerHTML += renderFn(r);
-                    // Somas simples para rodapés
                     if(sheet.includes('FOLHA') || sheet.includes('DECIMO')) {
                         sumBruto+=parseValue(r[2]); sumDesc+=parseValue(r[3]); sumLiq+=parseValue(r[4]);
                     }
                  });
-                 // Atualiza rodapés se existirem
                  if(document.getElementById('total-folha-bruto') && sheet.includes('FOLHA')) {
                     document.getElementById('total-folha-bruto').innerText = formatCurrency(sumBruto);
                     document.getElementById('total-folha-desc').innerText = '-'+formatCurrency(sumDesc);
@@ -323,7 +325,7 @@
                     document.getElementById('foot-folha').classList.remove('hidden');
                  }
             } else if (sheet === 'HISTORICO_MARGEM') {
-                renderListaMargem(json); // Redireciona para render específico
+                renderListaMargem(json);
             }
         } else {
             empty.classList.remove('hidden');
@@ -333,13 +335,17 @@
         setLoading(false);
     }
     
-    // Renderers Simples (Mantidos)
+    // Renderers Simples
     function getActions(key, row, idIdx) {
         return `<button onclick="excluir('${key}','${row[idIdx]}')" class="text-red-400 hover:bg-red-100 p-1 rounded"><i class="fas fa-trash"></i></button>`;
     }
-    function renderRowFolha(row) { 
-        return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 8)}</td></tr>`; 
-    }
+    function renderRowFolha(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 8)}</td></tr>`; }
+    function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 8)}</td></tr>`; }
+    function renderRowOutros(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-xs text-blue-500">${row[2]}</td><td class="p-3 text-blue-800">${row[3]}</td><td class="p-3 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-400">${row[5]}</td><td class="p-3 text-center">${getActions('OUTROS_BANCOS', row, 8)}</td></tr>`; }
+    function renderRowConsig(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('CONSIGNADOS', row, 6)}</td></tr>`; }
+    function renderRowRecorrente(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-xs font-bold text-gray-500">${row[4] || '-'}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 7)}</td></tr>`; }
+    function renderRowEventual(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-center">${getActions('OUTROS_PGTOS', row, 5)}</td></tr>`; }
+    function renderRowImposto(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-bold text-blue-900">${row[1]}</td><td class="p-3 text-blue-800">${row[2]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-xs text-blue-500">${row[4]}</td><td class="p-3 text-center">${getActions('IMPOSTO', row, 6)}</td></tr>`; }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -349,7 +355,6 @@
         data.competencia = currentCompetencia;
         data.usuarioLog = currentUser;
         
-        // Fecha modal se existir
         const modalEl = e.target.closest('div[id^="modal"]');
         if(modalEl) toggleModal(modalEl.id);
 
@@ -360,30 +365,64 @@
             const json = await res.json();
             showToast(json.status==='success'?'Salvo!':'Erro', json.status);
             
-            // Recarrega view atual
             const activeView = document.querySelector('.nav-btn.tab-active').id.replace('btn-', '');
             showView(activeView);
             
-            // Se salvou config, atualiza localmente
             if(data.action_type === 'salvarConfiguracao') { configData = data; }
 
         } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
     }
     
-    // Funções de Exclusão, Login, etc. (Mantidas da V1.60)
-    function openConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; document.getElementById('modal-confirm').classList.remove('hidden'); window.confirmCallback=cb; }
-    function closeConfirm(y) { document.getElementById('modal-confirm').classList.add('hidden'); if(y && window.confirmCallback) window.confirmCallback(); }
-    async function excluir(sheet, id) { openConfirm("Excluir?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheet, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); const v=document.querySelector('.nav-btn.tab-active').id.replace('btn-',''); showView(v); setLoading(false); }); }
-    
+    // --- 8. SISTEMA E LOGIN ---
+
+    function liberarAcesso() {
+        document.getElementById('login-screen').style.display = 'none';
+        // AQUI É O PULO DO GATO: Só mostra o sistema quando autenticado
+        document.getElementById('sistema-wrapper').style.display = 'flex';
+        
+        document.getElementById('user-display').innerHTML = `<i class="fas fa-user-circle mr-2"></i>Olá, <strong>${currentUser}</strong>`;
+        
+        const d = new Date();
+        const comp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        document.getElementById('inputCompetencia').value = comp;
+        mudarCompetencia(comp);
+        
+        setupMoneyMask();
+    }
+
     function handleLogin(e) { 
-        e.preventDefault(); const btn=e.target.querySelector('button'); btn.disabled=true; btn.innerText='Entrando...';
-        const data = Object.fromEntries(new FormData(e.target).entries()); data.action='login';
-        fetch(API_URL, {method:'POST', body:JSON.stringify(data)}).then(r=>r.json()).then(j=>{
-            if(j.status==='success'){ localStorage.setItem('rpps_token', j.token); localStorage.setItem('rpps_user', j.usuario); location.reload(); }
-            else { document.getElementById('login-msg').innerText=j.message; document.getElementById('login-msg').classList.remove('hidden'); btn.disabled=false; btn.innerText='ENTRAR'; }
+        e.preventDefault(); 
+        const btn=e.target.querySelector('button'); 
+        btn.disabled=true; btn.innerText='Entrando...';
+        const data = Object.fromEntries(new FormData(e.target).entries()); 
+        data.action='login';
+        
+        fetch(API_URL, {method:'POST', body:JSON.stringify(data)})
+        .then(r=>r.json())
+        .then(j=>{
+            if(j.status==='success'){ 
+                localStorage.setItem('rpps_token', j.token); 
+                localStorage.setItem('rpps_user', j.usuario); 
+                authToken = j.token;
+                currentUser = j.usuario;
+                liberarAcesso();
+            } else { 
+                document.getElementById('login-msg').innerText=j.message; 
+                document.getElementById('login-msg').classList.remove('hidden'); 
+                btn.disabled=false; btn.innerText='ENTRAR'; 
+            }
+        })
+        .catch(e => {
+             document.getElementById('login-msg').innerText="Erro de conexão"; 
+             document.getElementById('login-msg').classList.remove('hidden'); 
+             btn.disabled=false; btn.innerText='ENTRAR';
         });
     }
-    function logout() { localStorage.removeItem('rpps_token'); location.reload(); }
+
+    function logout() { 
+        localStorage.removeItem('rpps_token'); 
+        location.reload(); 
+    }
 
     function mudarCompetencia(v) {
         if(!v) return;
@@ -395,36 +434,68 @@
 
     // --- INIT ---
     window.onload = function() {
-        if(!authToken) { document.getElementById('login-screen').style.display = 'flex'; return; }
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('user-display').innerText = currentUser || 'Usuário';
+        if(!authToken) { 
+            // Se não tem token, garante que o sistema tá escondido e login visivel
+            document.getElementById('login-screen').style.display = 'flex'; 
+            document.getElementById('sistema-wrapper').style.display = 'none';
+            return; 
+        }
         
-        const d = new Date();
-        const comp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        document.getElementById('inputCompetencia').value = comp;
-        mudarCompetencia(comp);
-        
-        setupMoneyMask();
+        // Se tem token, tenta validar e liberar
+        fetch(`${API_URL}?action=verificarToken&token=${authToken}`)
+        .then(r => r.json())
+        .then(j => {
+            if(j.status === 'success') {
+                currentUser = j.usuario;
+                liberarAcesso();
+            } else {
+                logout(); // Token inválido
+            }
+        })
+        .catch(() => logout());
     };
     
-    // Funções Placeholder para não quebrar referências antigas no HTML
+    // Funções Placeholder e Modais Extras
     function carregarResumo() { fetchData('getResumoMensal').then(j => {
         if(j.status==='success') {
             document.getElementById('dash-total-bruto').innerText = formatCurrency((j.folha.total_bruto_normal||0)+(j.folha.total_bruto_decimo||0));
             document.getElementById('dash-total-liquido').innerText = formatCurrency(j.folha.total_geral);
             document.getElementById('dash-total-bradesco').innerText = formatCurrency(j.bancos.bradesco);
-            // ... outros dashs
+            document.getElementById('dash-total-outros').innerText = formatCurrency(j.bancos.outros);
+            document.getElementById('dash-total-consig').innerText = formatCurrency(j.consignados.total);
+            document.getElementById('dash-total-adm').innerText = formatCurrency(j.administrativo.total);
         }
     });}
-    function carregarPendencias() { /* Logica de pendencia */ }
-    function carregarConferencia() { /* Logica conferencia */ }
-    function carregarGuias() { /* Logica guias */ }
+    function carregarPendencias() { fetchData('getPendencias').then(renderPendencias); }
+    function renderPendencias(json) { /* simplificado */ 
+        const c=document.getElementById('pendencias-container'); const e=document.getElementById('empty-pendencias'); c.innerHTML='';
+        if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(r => c.innerHTML+=`<div class="p-4 bg-white border-l-4 border-red-500 shadow mb-2 flex justify-between"><div><span class="font-bold block">${r.descricao}</span><span class="text-xs text-gray-500">${r.origem} - ${r.competencia}</span></div><span class="font-bold text-red-600">${formatCurrency(r.valor)}</span></div>`); } else { e.classList.remove('hidden'); }
+    }
+    function carregarConferencia() { fetchData('getConferencia').then(renderConferencia); }
+    function renderConferencia(json) { /* simplificado */
+        const c=document.getElementById('conferencia-container'); const e=document.getElementById('empty-conferencia'); c.innerHTML='';
+        if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(r => c.innerHTML+=`<div class="p-4 bg-white border-l-4 ${r.status==='Pago'?'border-green-500 bg-green-50':'border-gray-300'} shadow mb-2 flex justify-between items-center"><div><span class="font-bold block ${r.status==='Pago'?'line-through text-gray-400':''}">${r.descricao}</span><span class="text-xs text-gray-500">${r.origem}</span></div><div class="text-right"><span class="block font-bold">${formatCurrency(r.valor)}</span><span class="text-xs">${r.status}</span></div></div>`); } else { e.classList.remove('hidden'); }
+    }
+    function carregarGuias() { fetchData('getGuiasDetalhadas').then(renderGuias); }
+    function renderGuias(json) { /* simplificado */
+        const c=document.getElementById('container-guias'); const e=document.getElementById('empty-guias'); c.innerHTML='';
+        if(json.status==='success' && json.data.length>0) { e.classList.add('hidden'); json.data.forEach(g => c.innerHTML+=`<div class="p-4 bg-white shadow rounded border-l-4 border-purple-600 mb-4"><h3 class="font-bold">${g.tipo}</h3><p>Devido: ${formatCurrency(g.totalDevido)} | Pago: ${formatCurrency(g.totalPago)}</p></div>`); } else { e.classList.remove('hidden'); }
+    }
     function abrirModal(id, act, data) {
         const m = document.getElementById(id); const f = m.querySelector('form'); f.reset();
         f.querySelector('[name="action_type"]').value = act;
-        f.querySelector('[name="id"]').value = data ? data.id : '';
+        f.querySelector('[name="id"]').value = data && data.id ? data.id : '';
         if(data) { for(let k in data) { const i = f.querySelector(`[name="${k}"]`); if(i) i.value = data[k]; } }
         toggleModal(id);
     }
-    function calcularLiquidoVisual(f) { /* Calculo simples folha */ }
+    function carregarTiposParaSelect() { fetchData('getConfigGuias').then(j => { const s=document.getElementById('select-tipo-guia'); s.innerHTML=''; j.data.forEach(t=>s.innerHTML+=`<option>${t.nome}</option>`); }); }
+    function calcularLiquidoVisual(f) { 
+        const b = parseFloat(f.querySelector('[name="valorBruto"]').value.replace(/\D/g,'')||0)/100;
+        const d = parseFloat(f.querySelector('[name="valorDescontos"]').value.replace(/\D/g,'')||0)/100;
+        const div = f.querySelector('div[id^="display-liquido"]');
+        if(div) div.innerText = 'Líquido: ' + (b-d).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    }
+    function openConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; document.getElementById('modal-confirm').classList.remove('hidden'); window.confirmCallback=cb; }
+    function closeConfirm(y) { document.getElementById('modal-confirm').classList.add('hidden'); if(y && window.confirmCallback) window.confirmCallback(); }
+    async function excluir(sheet, id) { openConfirm("Excluir?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheet, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); const v=document.querySelector('.nav-btn.tab-active').id.replace('btn-',''); showView(v); setLoading(false); }); }
 </script>
