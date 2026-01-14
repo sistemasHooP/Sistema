@@ -31,7 +31,8 @@
                 <h2 class="text-2xl font-bold text-gray-800">Gestão RPPS</h2>
                 <p class="text-gray-500 text-sm">Acesso Restrito</p>
             </div>
-            <form onsubmit="handleLogin(event)">
+            <!-- CORREÇÃO AQUI: return false impede o reload da página -->
+            <form onsubmit="handleLogin(event); return false;">
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Usuário</label>
                     <input type="text" name="usuario" class="w-full p-3 border rounded bg-gray-50 focus:border-blue-500 focus:outline-none" required>
@@ -43,12 +44,11 @@
                 <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.71 - Módulo Carta Margem PDF</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.72 - Fix Login & Print</p>
         </div>
     </div>
 
-    <!-- WRAPPER DO SISTEMA (ESCONDIDO POR PADRÃO - SÓ APARECE APÓS LOGIN) -->
-    <!-- Importante: style="display: none;" garante que não apareça misturado -->
+    <!-- WRAPPER DO SISTEMA (IMPORTANTE: display: none garante que inicie oculto) -->
     <div id="sistema-wrapper" class="flex h-screen w-full overflow-hidden" style="display: none;">
         
         <!-- SIDEBAR -->
@@ -122,11 +122,9 @@
                 <div id="view-resumo" class="view-section">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Financeiro</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <!-- Cards Totais -->
                         <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-800"><p class="text-sm text-gray-500 uppercase font-bold">Folha Bruta</p><h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bruto">R$ 0,00</h3></div>
                         <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500"><p class="text-sm text-gray-500 uppercase font-bold">Folha Líquida</p><h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-liquido">R$ 0,00</h3></div>
                         <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500"><p class="text-sm text-gray-500 uppercase font-bold">Líquido Bradesco</p><h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bradesco">R$ 0,00</h3></div>
-                        <!-- Cards Secundarios -->
                         <div class="bg-white p-4 rounded shadow-sm border-l-4 border-orange-500"><p class="text-xs text-gray-500 font-bold">Outros Bancos</p><h3 class="text-xl font-bold text-gray-800" id="dash-total-outros">R$ 0,00</h3></div>
                         <div class="bg-white p-4 rounded shadow-sm border-l-4 border-purple-500"><p class="text-xs text-gray-500 font-bold">Consignados</p><h3 class="text-xl font-bold text-gray-800" id="dash-total-consig">R$ 0,00</h3></div>
                         <div class="bg-white p-4 rounded shadow-sm border-l-4 border-indigo-500"><p class="text-xs text-gray-500 font-bold">Despesas Adm.</p><h3 class="text-xl font-bold text-gray-800" id="dash-total-adm">R$ 0,00</h3></div>
@@ -143,7 +141,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Coluna 1: Calculadora e Emissor -->
                         <div class="lg:col-span-1 space-y-6">
                             <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-teal-600">
                                 <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">1. Dados do Servidor</h3>
@@ -188,7 +185,6 @@
                             </div>
                         </div>
 
-                        <!-- Coluna 2: Histórico e Ação de Imprimir -->
                         <div class="lg:col-span-2">
                             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
                                 <div class="bg-gray-50 p-4 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
@@ -308,7 +304,7 @@
                     </div>
                 </div>
 
-                <!-- VIEWS FINANCEIRAS (MANTIDAS) -->
+                <!-- VIEWS FINANCEIRAS -->
                 <div id="view-folha" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Folha Pagamento</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-folha"></tbody><tfoot id="foot-folha" class="bg-gray-100 font-bold hidden"><tr><td class="px-4 py-3 text-right">TOTAL:</td><td class="px-4 py-3 text-right" id="total-folha-bruto"></td><td class="px-4 py-3 text-right text-red-500" id="total-folha-desc"></td><td class="px-4 py-3 text-right text-blue-700" id="total-folha-liq"></td><td colspan="2"></td></tr></tfoot></table><div id="empty-folha" class="p-4 text-center hidden">Vazio</div></div></div>
                 <div id="view-decimo" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><tbody id="lista-decimo"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div></div></div>
                 <div id="view-outros" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Outros Bancos</h2><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><tbody id="lista-outros"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div></div></div>
@@ -396,7 +392,7 @@
         </div>
     </div>
 
-    <!-- Modais Financeiros Padrão (z-index ajustado) -->
+    <!-- Modais Financeiros Padrão -->
     <div id="modal-folha" class="fixed inset-0 bg-black/50 z-[80] hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-folha')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">Folha Pagamento</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Bruto</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-folha">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
     <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-[80] hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600 relative"><button onclick="toggleModal('modal-decimo')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">13º Salário</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Bruto</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-decimo">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
     <div id="modal-outros" class="fixed inset-0 bg-black/50 z-[80] hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-outros')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Outros</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutrosBancos"><input type="hidden" name="sheetKey" value="OUTROS_BANCOS"><input name="nome" class="w-full border p-2 mb-2" placeholder="Nome"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select><input name="banco" class="w-full border p-2 mb-2" placeholder="Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
