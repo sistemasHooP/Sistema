@@ -99,7 +99,7 @@
                 <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.45 - Localização Inteligente</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.50 - Módulo Margem</p>
         </div>
     </div>
 
@@ -155,6 +155,12 @@
             <button onclick="showView('graficos')" id="btn-graficos" class="nav-btn w-full text-left px-6 py-3 hover:bg-indigo-50 text-indigo-800 font-bold transition-colors flex items-center">
                 <i class="fas fa-chart-bar w-6"></i> Análise Gráfica
             </button>
+            
+            <!-- NOVO BOTÃO MARGEM -->
+            <button onclick="showView('margem')" id="btn-margem" class="nav-btn w-full text-left px-6 py-3 hover:bg-teal-50 text-teal-800 font-bold transition-colors flex items-center">
+                <i class="fas fa-calculator w-6"></i> Calculadora Margem
+            </button>
+
             <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center">
                 <i class="fas fa-check-double w-6"></i> Conferência Pagtos
             </button>
@@ -350,6 +356,106 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW: MARGEM CONSIGNÁVEL (NOVA) -->
+            <div id="view-margem" class="view-section hidden-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-teal-800"><i class="fas fa-calculator mr-2"></i>Calculadora de Margem</h2>
+                    <p class="text-sm text-gray-500">Simule a margem disponível para servidores</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Calculadora -->
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-teal-500">
+                        <form onsubmit="handleSubmit(event)" oninput="calcularMargemVisual(this)">
+                            <input type="hidden" name="action_type" value="adicionarCalculoMargem">
+                            <input type="hidden" name="sheetKey" value="MARGEM">
+                            
+                            <!-- Campos Escondidos para Envio -->
+                            <input type="hidden" name="liquido">
+                            <input type="hidden" name="margemPermitida">
+                            <input type="hidden" name="disponivel">
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Nome do Servidor</label>
+                                <input name="nome" class="w-full p-2 border rounded" placeholder="Ex: João da Silva" required>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Renda Bruta</label>
+                                    <input name="bruto" class="money-mask w-full p-2 border rounded bg-blue-50 border-blue-200 text-blue-800 font-bold" placeholder="R$ 0,00" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Desc. Obrigatórios</label>
+                                    <input name="descontos" class="money-mask w-full p-2 border rounded bg-red-50 border-red-200 text-red-800 font-bold" placeholder="R$ 0,00" required>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">% Margem</label>
+                                    <input name="porcentagem" type="number" class="w-full p-2 border rounded text-center" value="35" min="1" max="100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Parcelas Já Contratadas</label>
+                                    <input name="usoAtual" class="money-mask w-full p-2 border rounded" placeholder="R$ 0,00">
+                                </div>
+                            </div>
+
+                            <!-- Resultados Visuais -->
+                            <div class="bg-gray-50 p-4 rounded-lg space-y-2 mb-6">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Renda Líquida:</span>
+                                    <span class="font-bold text-gray-800" id="display-calc-liquido">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Margem Permitida (35%):</span>
+                                    <span class="font-bold text-blue-600" id="display-calc-permitida">R$ 0,00</span>
+                                </div>
+                                <div class="border-t border-gray-200 my-2"></div>
+                                <div class="flex justify-between text-lg">
+                                    <span class="font-bold text-teal-800">Margem Disponível:</span>
+                                    <span class="font-bold text-teal-600" id="display-calc-disponivel">R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded hover:bg-teal-700 shadow-lg transition">
+                                <i class="fas fa-save mr-2"></i> Salvar Simulação
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Explicação -->
+                    <div class="bg-teal-50 p-6 rounded-xl border border-teal-100 h-fit">
+                        <h3 class="font-bold text-teal-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Como funciona o cálculo?</h3>
+                        <ul class="space-y-3 text-sm text-teal-900">
+                            <li><strong>1. Renda Líquida:</strong><br>Salário Bruto (-) Descontos Obrigatórios (INSS, IRRF, Pensão).</li>
+                            <li><strong>2. Margem Permitida:</strong><br>35% da Renda Líquida (ou a % que você definir).</li>
+                            <li><strong>3. Margem Disponível:</strong><br>Margem Permitida (-) Soma das parcelas de empréstimos que já estão descontando em folha.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tabela de Histórico -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-gray-700">Histórico de Simulações (Mês Atual)</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-3">Servidor</th>
+                                <th class="px-6 py-3 text-right">Líquido</th>
+                                <th class="px-6 py-3 text-right">Margem Total</th>
+                                <th class="px-6 py-3 text-right text-red-500">Em Uso</th>
+                                <th class="px-6 py-3 text-right text-teal-600 font-bold">Disponível</th>
+                                <th class="px-6 py-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-margem" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                    <div id="empty-margem" class="p-8 text-center text-gray-500 hidden">Nenhuma simulação salva neste mês.</div>
                 </div>
             </div>
 
@@ -568,26 +674,18 @@
         
         let confirmCallback = null;
         let CACHE = {};
-        let pendingHighlightId = null; // Variável global para armazenar o ID a ser destacado
+        let pendingHighlightId = null;
         
-        // Variavel global do grafico
         let financeChart = null;
 
-        // --- 1. FUNÇÕES GLOBAIS E UTILITÁRIAS (DEFINIDAS PRIMEIRO) ---
+        // --- 1. FUNÇÕES GLOBAIS E UTILITÁRIAS ---
         
         function formatCurrency(v) { 
             if(v === undefined || v === null || v === '') return 'R$ 0,00';
             if(typeof v === 'number') return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            
-            // Tratamento especial para strings do Sheets (ex: "1.234,56" ou "R$ 1.234,56")
             let str = v.toString();
-            if(str.includes(',')) {
-                // Formato BR -> Remove ponto milhar, troca virgula por ponto
-                str = str.replace(/\./g, '').replace(',', '.');
-            }
-            // Remove 'R$' e espaços, mantendo apenas números, sinal e ponto
+            if(str.includes(',')) { str = str.replace(/\./g, '').replace(',', '.'); }
             str = str.replace(/[R$\s]/g, '');
-            
             return parseFloat(str || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); 
         }
         
@@ -639,16 +737,42 @@
             if(div) div.innerText = "Líquido: " + liq.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         }
 
+        // --- NOVA FUNÇÃO: CALCULAR MARGEM VISUAL ---
+        function calcularMargemVisual(form) {
+            const bruto = parseValue(form.querySelector('[name="bruto"]').value);
+            const descontos = parseValue(form.querySelector('[name="descontos"]').value);
+            const usoAtual = parseValue(form.querySelector('[name="usoAtual"]').value);
+            const porcentagem = parseFloat(form.querySelector('[name="porcentagem"]').value) || 35;
+
+            const liquido = bruto - descontos;
+            const margemPermitida = liquido * (porcentagem / 100);
+            const disponivel = margemPermitida - usoAtual;
+
+            document.getElementById('display-calc-liquido').innerText = formatCurrency(liquido);
+            document.getElementById('display-calc-permitida').innerText = formatCurrency(margemPermitida);
+            document.getElementById('display-calc-disponivel').innerText = formatCurrency(disponivel);
+
+            form.querySelector('[name="liquido"]').value = liquido.toFixed(2);
+            form.querySelector('[name="margemPermitida"]').value = margemPermitida.toFixed(2);
+            form.querySelector('[name="disponivel"]').value = disponivel.toFixed(2);
+            
+            const dispEl = document.getElementById('display-calc-disponivel');
+            if(disponivel < 0) {
+                dispEl.classList.remove('text-teal-600');
+                dispEl.classList.add('text-red-600');
+            } else {
+                dispEl.classList.remove('text-red-600');
+                dispEl.classList.add('text-teal-600');
+            }
+        }
+
         function irParaPendencia(competencia, id) {
-            // Apenas troca a visualização para Conferência e define o ID para destaque. 
-            // Como a conferência é inteligente, se estivermos no mês atual (ou futuro), 
-            // ela já mostrará as pendências passadas.
             pendingHighlightId = id;
             showView('conferencia');
             showToast(`Localizando pendência...`, 'success');
         }
 
-        // --- 2. HELPERS DE AÇÃO E RENDERIZADORES (DEFINIDOS ANTES DO USO) ---
+        // --- 2. HELPERS DE AÇÃO E RENDERIZADORES ---
 
         function getActions(key, row, idIdx) {
             const id = row[idIdx]; 
@@ -657,14 +781,12 @@
             
             if(key==='IMPOSTO') params=`{id:'${id}', tipo:'${safe(row[1])}', descricao:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[4])}'}`;
             
-            // Novos Actions para Folha (Passando Bruto e Desc)
             if(key==='FOLHA') params=`{id:'${id}', tipo:'${safe(row[1])}', valorBruto:'${safe(row[2])}', valorDescontos:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
             if(key==='DECIMO') params=`{id:'${id}', tipo:'${safe(row[1])}', valorBruto:'${safe(row[2])}', valorDescontos:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
             
             if(key==='CONSIGNADOS') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
             if(key==='OUTROS_BANCOS') params=`{id:'${id}', nome:'${safe(row[1])}', tipo:'${safe(row[2])}', banco:'${safe(row[3])}', valor:'${safe(row[4])}', obs:'${safe(row[5])}'}`;
             
-            // Recorrentes (indices atualizados): Desc=1, Tipo=2, Val=3, NF=4, Status=5, Obs=6, ID=7
             if(key==='RECORRENTES') params=`{id:'${id}', descricao:'${safe(row[1])}', tipo:'${safe(row[2])}', valor:'${safe(row[3])}', notaFiscal:'${safe(row[4])}', obs:'${safe(row[6])}'}`;
             
             if(key==='OUTROS_PGTOS') params=`{id:'${id}', descricao:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[4])}'}`;
@@ -688,12 +810,22 @@
         function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-medium text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right font-medium text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 8)}</td></tr>`; }
         function renderRowOutros(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-xs text-blue-500">${row[2]}</td><td class="p-3 text-blue-800">${row[3]}</td><td class="p-3 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-400">${row[5]}</td><td class="p-3 text-center">${getActions('OUTROS_BANCOS', row, 8)}</td></tr>`; }
         function renderRowConsig(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('CONSIGNADOS', row, 6)}</td></tr>`; }
-        
-        // Recorrentes Atualizado: exibe a NF
-        function renderRowRecorrente(row) { 
-            return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-xs font-bold text-gray-500">${row[4] || '-'}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 7)}</td></tr>`; 
-        }
+        function renderRowRecorrente(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-xs font-bold text-gray-500">${row[4] || '-'}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 7)}</td></tr>`; }
         function renderRowEventual(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-center">${getActions('OUTROS_PGTOS', row, 5)}</td></tr>`; }
+        
+        // NOVO: Renderer para Histórico de Margem
+        function renderRowMargem(row) {
+            const disponivel = parseValue(row[8]);
+            const colorDisp = disponivel < 0 ? 'text-red-600' : 'text-teal-600';
+            return `<tr class="border-b hover:bg-teal-50 border-teal-100">
+                <td class="p-3 font-medium text-gray-800">${row[1]}</td>
+                <td class="p-3 text-right text-gray-600">${formatCurrency(row[4])}</td>
+                <td class="p-3 text-right text-gray-600 font-bold">${formatCurrency(row[6])}</td>
+                <td class="p-3 text-right text-red-500 text-xs">${formatCurrency(row[7])}</td>
+                <td class="p-3 text-right ${colorDisp} font-extrabold text-lg">${formatCurrency(row[8])}</td>
+                <td class="p-3 text-center"><button onclick="excluir('MARGEM','${row[10]}')" class="text-red-400 hover:bg-red-100 p-1 rounded transition"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        }
 
         // --- 3. FETCH E LOGICA DE DADOS ---
 
@@ -709,30 +841,21 @@
         }
         function invalidateCache() { CACHE = {}; }
 
-        // --- 4. FUNÇÕES DE CARREGAMENTO (LOGICA PRINCIPAL) ---
+        // --- 4. FUNÇÕES DE CARREGAMENTO ---
 
         function renderLista(json, tbodyId, emptyId, renderFn, sheetType) {
             const tbody = document.getElementById(tbodyId);
             tbody.innerHTML = '';
-            
             let sumBruto = 0, sumDesc = 0, sumLiq = 0;
-            
             if(json.data && json.data.length > 0) {
                 document.getElementById(emptyId).classList.add('hidden');
                 json.data.forEach(r => {
                     tbody.innerHTML += renderFn(r);
-                    
                     if(sheetType === 'FOLHA' || sheetType === 'DECIMO') {
-                        sumBruto += parseValue(r[2]);
-                        sumDesc += parseValue(r[3]);
-                        sumLiq += parseValue(r[4]);
-                    } else if (sheetType === 'OUTROS') {
-                        sumLiq += parseValue(r[4]);
-                    } else if (sheetType === 'CONSIGNADOS' || sheetType === 'EVENTUAIS') {
-                        sumLiq += parseValue(r[2]);
-                    } else if (sheetType === 'RECORRENTES' || sheetType === 'IMPOSTO') {
-                        sumLiq += parseValue(r[3]);
-                    }
+                        sumBruto += parseValue(r[2]); sumDesc += parseValue(r[3]); sumLiq += parseValue(r[4]);
+                    } else if (sheetType === 'OUTROS') sumLiq += parseValue(r[4]);
+                    else if (sheetType === 'CONSIGNADOS' || sheetType === 'EVENTUAIS') sumLiq += parseValue(r[2]);
+                    else if (sheetType === 'RECORRENTES' || sheetType === 'IMPOSTO') sumLiq += parseValue(r[3]);
                 });
                 updateFooter(sheetType, sumBruto, sumDesc, sumLiq);
             } else { 
@@ -758,7 +881,6 @@
             if(!fid) return;
             const foot = document.getElementById(fid);
             foot.classList.remove('hidden');
-            
             if(type === 'FOLHA' || type === 'DECIMO') {
                 document.getElementById(`total-${type.toLowerCase()}-bruto`).innerText = formatCurrency(bruto);
                 document.getElementById(`total-${type.toLowerCase()}-desc`).innerText = '-' + formatCurrency(desc);
@@ -768,11 +890,16 @@
                 if(el) el.innerText = formatCurrency(liq);
             }
         }
+        
+        // Helper seguro para setar innerText sem erro de nulo
+        function setElementText(id, value) {
+            const el = document.getElementById(id);
+            if(el) el.innerText = value;
+        }
 
         async function carregarLista(sheet, tbodyId, emptyId, renderFn, force = false) {
             if(force) invalidateCache();
             const cacheKey = `getList_${currentCompetencia}_sheet=${sheet}`;
-            
             let sheetType = '';
             if(sheet === 'FOLHA_PAGAMENTO') sheetType = 'FOLHA';
             else if(sheet === 'DECIMO_TERCEIRO') sheetType = 'DECIMO';
@@ -781,6 +908,7 @@
             else if(sheet === 'PAGAMENTOS_RECORRENTES') sheetType = 'RECORRENTES';
             else if(sheet === 'OUTROS_PAGAMENTOS') sheetType = 'EVENTUAIS';
             else if(sheet === 'IMPOSTO_RENDA') sheetType = 'IMPOSTO';
+            else if(sheet === 'HISTORICO_MARGEM') sheetType = 'MARGEM'; 
 
             if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn, sheetType); return; }
             setLoading(true);
@@ -798,6 +926,7 @@
             if(view === 'resumo') carregarResumo();
             else if(view === 'graficos') carregarHistorico();
             else if(view === 'conferencia') carregarConferencia();
+            else if(view === 'margem') carregarMargem(); // Nova view
             else if(view === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
             else if(view === 'imposto') carregarLista('IMPOSTO_RENDA', 'lista-imposto', 'empty-imposto', renderRowImposto);
             else if(view === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
@@ -809,6 +938,10 @@
             else if(view === 'pendencias') carregarPendencias();
             else if(view === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
             else if(view === 'guias') carregarGuias();
+        }
+
+        async function carregarMargem() {
+            carregarLista('HISTORICO_MARGEM', 'lista-margem', 'empty-margem', renderRowMargem);
         }
 
         async function carregarResumo(force = false) {
@@ -823,19 +956,24 @@
         
         function renderResumo(json) {
              if(json.status === 'success') {
-                const brutoTotal = json.folha.total_bruto_normal + json.folha.total_bruto_decimo;
-                document.getElementById('dash-total-bruto').innerText = formatCurrency(brutoTotal);
-                document.getElementById('dash-total-liquido').innerText = formatCurrency(json.folha.total_geral);
-                document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco);
-                document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros);
-                document.getElementById('dash-total-imposto').innerText = formatCurrency(json.imposto.total);
-                document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total);
-                document.getElementById('dash-total-adm').innerText = formatCurrency(json.administrativo.total);
-                document.getElementById('dash-recolhimento-pago').innerText = formatCurrency(json.recolhimento.pago);
-                document.getElementById('dash-recolhimento-devido').innerText = formatCurrency(json.recolhimento.devido);
-                document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
-                document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros);
-                document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco);
+                // Verificação de segurança para evitar erro em dados nulos
+                const brutoNormal = json.folha.total_bruto_normal || 0;
+                const brutoDecimo = json.folha.total_bruto_decimo || 0;
+                const brutoTotal = brutoNormal + brutoDecimo;
+                
+                // Uso da função auxiliar setElementText para evitar erros de elemento nulo
+                setElementText('dash-total-bruto', formatCurrency(brutoTotal));
+                setElementText('dash-total-liquido', formatCurrency(json.folha.total_geral));
+                setElementText('dash-total-bradesco', formatCurrency(json.bancos.bradesco));
+                setElementText('dash-total-outros', formatCurrency(json.bancos.outros));
+                setElementText('dash-total-imposto', formatCurrency(json.imposto.total));
+                setElementText('dash-total-consig', formatCurrency(json.consignados.total));
+                setElementText('dash-total-adm', formatCurrency(json.administrativo.total));
+                setElementText('dash-recolhimento-pago', formatCurrency(json.recolhimento.pago));
+                setElementText('dash-recolhimento-devido', formatCurrency(json.recolhimento.devido));
+                setElementText('conf-folha', formatCurrency(json.folha.total_geral));
+                setElementText('conf-outros', formatCurrency(json.bancos.outros));
+                setElementText('conf-bradesco', formatCurrency(json.bancos.bradesco));
             }
         }
 
@@ -965,10 +1103,6 @@
             const container = document.getElementById('conferencia-container');
             const empty = document.getElementById('empty-conferencia');
             container.innerHTML = '';
-            
-            // Variável para armazenar o elemento a destacar
-            let elementToHighlight = null;
-
             if(json.status === 'success' && json.data.length > 0) {
                 empty.classList.add('hidden');
                 const grupos = {};
@@ -979,17 +1113,12 @@
                         const isPago = item.status === 'Pago';
                         const switchHtml = `<label class="switch"><input type="checkbox" ${isPago ? 'checked' : ''} onchange="togglePagamento('${item.id}', '${item.origem}', this)"><span class="slider"></span></label><span class="switch-label">${isPago ? 'PAGO' : 'PENDENTE'}</span>`;
                         
-                        // Badge de Competência
                         const compHtml = `<span class="inline-block bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100 mt-1"><i class="far fa-calendar-alt mr-1"></i>${item.competencia}</span>`;
-
-                        // Usando Box Shadow em vez de border-l-4 para garantir que a cor apareça em todas as linhas
                         const rowClass = isPago 
                             ? 'bg-emerald-100 shadow-[inset_5px_0_0_0_#10b981] transition-colors duration-300' 
                             : 'bg-white hover:bg-gray-50 shadow-[inset_5px_0_0_0_transparent] transition-colors duration-300';
-                            
                         const textClass = isPago ? 'text-gray-400 line-through' : 'text-gray-900';
 
-                        // Adiciona ID único à linha
                         rows += `<tr id="row-${item.id}" class="border-b last:border-0 ${rowClass}">
                             <td class="px-6 py-4 w-1/4">
                                 <div class="text-xs font-bold uppercase text-gray-500">${item.origem}</div>
@@ -1004,20 +1133,14 @@
                 }
             } else { empty.classList.remove('hidden'); }
 
-            // Lógica de Destaque Pós-Renderização
             if (pendingHighlightId) {
                 const el = document.getElementById(`row-${pendingHighlightId}`);
                 if (el) {
-                    // Scroll suave
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Adiciona classe de destaque
                     el.classList.add('highlight-row');
-                    // Remove destaque após animação
-                    setTimeout(() => {
-                        el.classList.remove('highlight-row');
-                    }, 3000);
+                    setTimeout(() => { el.classList.remove('highlight-row'); }, 3000);
                 }
-                pendingHighlightId = null; // Limpa o ID pendente
+                pendingHighlightId = null; 
             }
         }
 
@@ -1044,7 +1167,6 @@
                     let rows = '';
                     itens.forEach(row => {
                         let badgeClass = 'bg-red-100 text-red-600'; if(row.status === 'A Receber') badgeClass = 'bg-purple-100 text-purple-600';
-                        // Passa o ID original para a função de navegação
                         rows += `<tr onclick="irParaPendencia('${row.competencia}', '${row.idOriginal}')" class="hover:bg-red-50 border-b border-red-100 last:border-0 cursor-pointer transition-colors" title="Clique para resolver em ${row.competencia}">
                             <td class="px-6 py-3 text-sm font-bold text-gray-700 w-1/6">${row.competencia}</td>
                             <td class="px-6 py-3 text-xs uppercase text-gray-500 w-1/6">${row.origem}</td>
@@ -1066,25 +1188,29 @@
             data.action = data.id ? 'editarRegistro' : data.action_type;
             data.competencia = currentCompetencia;
             data.usuarioLog = currentUser;
-            toggleModal(e.target.closest('div[id^="modal"]').id);
+            
+            const modalEl = e.target.closest('div[id^="modal"]');
+            if(modalEl) toggleModal(modalEl.id);
+            
             invalidateCache();
             setLoading(true);
             try {
                 const res = await fetch(API_URL, {method:'POST', body:JSON.stringify(data)});
                 const json = await res.json();
                 showToast(json.status==='success'?'Salvo!':'Erro', json.status);
-                if(data.action_type === 'adicionarGuiaObrigacao' || data.action_type === 'adicionarPagamentoGuia') { 
+                
+                if(data.action_type === 'adicionarCalculoMargem') {
+                    carregarMargem(); 
+                } else if(data.action_type === 'adicionarGuiaObrigacao' || data.action_type === 'adicionarPagamentoGuia') { 
                     carregarGuias(); 
                 } else { 
-                    // Refresh view
                     const activeBtn = document.querySelector('.nav-btn.tab-active');
-                    if(activeBtn) activeBtn.click();
+                    if(activeBtn && activeBtn.id !== 'btn-margem') activeBtn.click();
                 }
             } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
         }
 
         async function togglePagamento(id, origem, checkbox) {
-            // Evita cliques duplos durante o processamento
             checkbox.disabled = true;
             checkbox.classList.add('pointer-events-none');
             
@@ -1092,9 +1218,8 @@
             const label = checkbox.parentElement.nextElementSibling;
             label.innerText = novoStatus === 'Pago' ? 'PAGO' : 'PENDENTE';
             
-            // Atualização Visual Otimista (com Box Shadow em vez de border)
             const tr = checkbox.closest('tr');
-            const desc = tr.querySelector('td:nth-child(2)'); // Célula da Descrição
+            const desc = tr.querySelector('td:nth-child(2)'); 
             
             if(novoStatus === 'Pago') {
                 tr.className = "border-b last:border-0 bg-emerald-100 shadow-[inset_5px_0_0_0_#10b981] transition-colors duration-300";
@@ -1111,11 +1236,10 @@
                 const json = await res.json();
                 
                 if(json.status !== 'success') {
-                    throw new Error('Erro no servidor'); // Força o catch se o servidor não confirmar
+                    throw new Error('Erro no servidor'); 
                 }
                 invalidateCache();
             } catch(e) { 
-                // Reverte visual em caso de erro
                 checkbox.checked = !checkbox.checked; 
                 label.innerText = checkbox.checked ? 'PAGO' : 'PENDENTE';
                 if(!checkbox.checked) {
@@ -1147,7 +1271,7 @@
         
         function confirmarImportacao(sheetTarget) { openConfirm(`Copiar registros do mês anterior para ${currentCompetencia}?`, async () => { setLoading(true); try { const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'importarMesAnterior', sheetTarget, competenciaAtual:currentCompetencia, usuarioLog:currentUser})}); const json = await res.json(); invalidateCache(); showToast(json.status==='success'?'Sucesso!':'Erro', json.status); if(json.status==='success') document.querySelector('.nav-btn.tab-active').click(); } catch(e) { showToast('Erro conexão', 'error'); } finally { setLoading(false); } }); }
         
-        async function excluir(sheetKey, id) { openConfirm("Excluir este registro?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheetKey, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); if(sheetKey === 'GUIAS') carregarGuias(); else document.querySelector('.nav-btn.tab-active').click(); setLoading(false); }); }
+        async function excluir(sheetKey, id) { openConfirm("Excluir este registro?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheetKey, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); if(sheetKey === 'GUIAS') carregarGuias(); else if(sheetKey === 'MARGEM') carregarMargem(); else document.querySelector('.nav-btn.tab-active').click(); setLoading(false); }); }
         
         function abrirModal(id, action, editData=null) {
             const m = document.getElementById(id);
@@ -1167,7 +1291,6 @@
                     if (input) { input.value = k.includes('valor') ? formatCurrency(editData[k]) : editData[k]; }
                 }
                 
-                // Dispara o cálculo visual se for folha
                 if(id === 'modal-folha' || id === 'modal-decimo') calcularLiquidoVisual(f);
 
                 if (titleEl) titleEl.innerText = titleEl.innerText.replace('Adicionar', 'Editar');
@@ -1276,6 +1399,7 @@
             const activeBtn = document.querySelector('.nav-btn.tab-active');
             if(activeBtn) {
                 if(activeBtn.id === 'btn-graficos') carregarHistorico();
+                else if(activeBtn.id === 'btn-margem') carregarMargem(); // Recarrega se estiver na margem
                 else activeBtn.click();
             }
             preCarregarDados();
