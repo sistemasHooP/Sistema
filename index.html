@@ -63,6 +63,18 @@
         
         /* Login Screen */
         #login-screen { z-index: 100; position: fixed; inset: 0; background-color: #1e3a8a; display: flex; align-items: center; justify-content: center; }
+
+        /* Animação de Destaque para Pendência */
+        @keyframes highlight-yellow {
+            0% { background-color: #fef08a; transform: scale(1.02); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            50% { background-color: #fef08a; transform: scale(1.02); }
+            100% { background-color: transparent; transform: scale(1); box-shadow: none; }
+        }
+        .highlight-row {
+            animation: highlight-yellow 3s ease-out forwards;
+            position: relative;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col md:flex-row overflow-hidden">
@@ -87,7 +99,7 @@
                 <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.34 - Totais Automáticos</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.45 - Localização Inteligente</p>
         </div>
     </div>
 
@@ -341,14 +353,14 @@
                 </div>
             </div>
 
-            <!-- VIEW: CONFERÊNCIA PAGAMENTOS -->
+            <!-- VIEW: CONFERÊNCIA PAGAMENTOS (ATUALIZADO) -->
             <div id="view-conferencia" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência de Pagamentos</h2>
                     <button onclick="carregarConferencia(true)" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
                 <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 text-sm text-green-800">
-                    <i class="fas fa-info-circle mr-2"></i> Marque o que já foi pago. Itens desligados constarão como <strong>Pendentes</strong>.
+                    <i class="fas fa-info-circle mr-2"></i> Marque o que já foi pago. Itens não pagos deste mês aparecerão automaticamente no próximo.
                 </div>
                 <div id="conferencia-container" class="space-y-6"></div>
                 <div id="empty-conferencia" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhum lançamento neste mês.</div>
@@ -444,30 +456,14 @@
             <div id="view-decimo" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
-                            <tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr>
-                        </thead>
-                        <tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody>
-                        <tfoot id="foot-decimo" class="bg-gray-100 font-bold text-gray-700 hidden">
-                            <tr>
-                                <td class="px-4 py-3 text-right">TOTAL:</td>
-                                <td class="px-4 py-3 text-right" id="total-decimo-bruto"></td>
-                                <td class="px-4 py-3 text-right text-red-500" id="total-decimo-desc"></td>
-                                <td class="px-4 py-3 text-right text-blue-700" id="total-decimo-liq"></td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
                 </div>
             </div>
             
             <div id="view-outros" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">PGMT Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
                         <tbody id="lista-outros" class="divide-y divide-blue-50"></tbody>
                         <tfoot id="foot-outros" class="bg-gray-100 font-bold text-gray-700 hidden">
                             <tr>
@@ -484,8 +480,7 @@
             <div id="view-consignados" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
                         <tbody id="lista-consignados" class="divide-y divide-blue-50"></tbody>
                         <tfoot id="foot-consignados" class="bg-gray-100 font-bold text-gray-700 hidden">
                             <tr>
@@ -504,11 +499,11 @@
                     <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-blue-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div>
                     <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3">NF</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
                             <tbody id="lista-recorrentes" class="divide-y divide-blue-50"></tbody>
                             <tfoot id="foot-recorrentes" class="bg-gray-100 font-bold text-gray-700 hidden">
                                 <tr>
-                                    <td class="px-6 py-3 text-right">TOTAL:</td>
+                                    <td class="px-6 py-3 text-right" colspan="2">TOTAL:</td>
                                     <td class="px-6 py-3 text-right" id="total-recorrentes-val"></td>
                                     <td></td>
                                 </tr>
@@ -560,7 +555,8 @@
     
     <div id="modal-consignados" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-consignados')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Consignado</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarConsignado"><input type="hidden" name="sheetKey" value="CONSIGNADOS"><input name="tipo" class="w-full border p-2 mb-2" placeholder="Tipo/Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
-    <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-recorrentes')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Assessoria</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarRecorrente"><input type="hidden" name="sheetKey" value="RECORRENTES"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><select name="tipo" class="w-full border p-2 mb-2"><option>Assessoria</option><option>Serviço</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <!-- MODAL ASSESSORIAS ATUALIZADO (CAMPO NF) -->
+    <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-recorrentes')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Assessoria</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarRecorrente"><input type="hidden" name="sheetKey" value="RECORRENTES"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><select name="tipo" class="w-full border p-2 mb-2"><option>Assessoria</option><option>Serviço</option></select><input name="notaFiscal" class="w-full border p-2 mb-2" placeholder="Nota Fiscal (Nº)"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
     <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-eventuais')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Eventual</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutroPagamento"><input type="hidden" name="sheetKey" value="OUTROS_PGTOS"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
 
@@ -572,6 +568,7 @@
         
         let confirmCallback = null;
         let CACHE = {};
+        let pendingHighlightId = null; // Variável global para armazenar o ID a ser destacado
         
         // Variavel global do grafico
         let financeChart = null;
@@ -642,6 +639,15 @@
             if(div) div.innerText = "Líquido: " + liq.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         }
 
+        function irParaPendencia(competencia, id) {
+            // Apenas troca a visualização para Conferência e define o ID para destaque. 
+            // Como a conferência é inteligente, se estivermos no mês atual (ou futuro), 
+            // ela já mostrará as pendências passadas.
+            pendingHighlightId = id;
+            showView('conferencia');
+            showToast(`Localizando pendência...`, 'success');
+        }
+
         // --- 2. HELPERS DE AÇÃO E RENDERIZADORES (DEFINIDOS ANTES DO USO) ---
 
         function getActions(key, row, idIdx) {
@@ -657,7 +663,10 @@
             
             if(key==='CONSIGNADOS') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
             if(key==='OUTROS_BANCOS') params=`{id:'${id}', nome:'${safe(row[1])}', tipo:'${safe(row[2])}', banco:'${safe(row[3])}', valor:'${safe(row[4])}', obs:'${safe(row[5])}'}`;
-            if(key==='RECORRENTES') params=`{id:'${id}', descricao:'${safe(row[1])}', tipo:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
+            
+            // Recorrentes (indices atualizados): Desc=1, Tipo=2, Val=3, NF=4, Status=5, Obs=6, ID=7
+            if(key==='RECORRENTES') params=`{id:'${id}', descricao:'${safe(row[1])}', tipo:'${safe(row[2])}', valor:'${safe(row[3])}', notaFiscal:'${safe(row[4])}', obs:'${safe(row[6])}'}`;
+            
             if(key==='OUTROS_PGTOS') params=`{id:'${id}', descricao:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[4])}'}`;
             
             let modal = 'modal-folha'; 
@@ -679,7 +688,11 @@
         function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-medium text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right font-medium text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 8)}</td></tr>`; }
         function renderRowOutros(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-xs text-blue-500">${row[2]}</td><td class="p-3 text-blue-800">${row[3]}</td><td class="p-3 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-400">${row[5]}</td><td class="p-3 text-center">${getActions('OUTROS_BANCOS', row, 8)}</td></tr>`; }
         function renderRowConsig(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('CONSIGNADOS', row, 6)}</td></tr>`; }
-        function renderRowRecorrente(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 6)}</td></tr>`; }
+        
+        // Recorrentes Atualizado: exibe a NF
+        function renderRowRecorrente(row) { 
+            return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-xs font-bold text-gray-500">${row[4] || '-'}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 7)}</td></tr>`; 
+        }
         function renderRowEventual(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-center">${getActions('OUTROS_PGTOS', row, 5)}</td></tr>`; }
 
         // --- 3. FETCH E LOGICA DE DADOS ---
@@ -702,7 +715,6 @@
             const tbody = document.getElementById(tbodyId);
             tbody.innerHTML = '';
             
-            // Variáveis de soma
             let sumBruto = 0, sumDesc = 0, sumLiq = 0;
             
             if(json.data && json.data.length > 0) {
@@ -710,30 +722,21 @@
                 json.data.forEach(r => {
                     tbody.innerHTML += renderFn(r);
                     
-                    // Cálculo dos totais baseado no tipo de aba
                     if(sheetType === 'FOLHA' || sheetType === 'DECIMO') {
-                        // Indices: 2=Bruto, 3=Desc, 4=Liquido
                         sumBruto += parseValue(r[2]);
                         sumDesc += parseValue(r[3]);
                         sumLiq += parseValue(r[4]);
                     } else if (sheetType === 'OUTROS') {
-                        // Index 4 = Valor
                         sumLiq += parseValue(r[4]);
                     } else if (sheetType === 'CONSIGNADOS' || sheetType === 'EVENTUAIS') {
-                        // Index 2 = Valor
                         sumLiq += parseValue(r[2]);
                     } else if (sheetType === 'RECORRENTES' || sheetType === 'IMPOSTO') {
-                        // Index 3 = Valor
                         sumLiq += parseValue(r[3]);
                     }
                 });
-                
-                // Atualiza o rodapé com os totais
                 updateFooter(sheetType, sumBruto, sumDesc, sumLiq);
-                
             } else { 
                 document.getElementById(emptyId).classList.remove('hidden'); 
-                // Hide footer if empty
                 const footerId = getFooterId(sheetType);
                 if(footerId) document.getElementById(footerId).classList.add('hidden');
             }
@@ -761,7 +764,6 @@
                 document.getElementById(`total-${type.toLowerCase()}-desc`).innerText = '-' + formatCurrency(desc);
                 document.getElementById(`total-${type.toLowerCase()}-liq`).innerText = formatCurrency(liq);
             } else {
-                // Para tabelas simples, usamos o sufixo -val no ID
                 const el = document.getElementById(`total-${type.toLowerCase()}-val`);
                 if(el) el.innerText = formatCurrency(liq);
             }
@@ -822,7 +824,6 @@
         function renderResumo(json) {
              if(json.status === 'success') {
                 const brutoTotal = json.folha.total_bruto_normal + json.folha.total_bruto_decimo;
-                
                 document.getElementById('dash-total-bruto').innerText = formatCurrency(brutoTotal);
                 document.getElementById('dash-total-liquido').innerText = formatCurrency(json.folha.total_geral);
                 document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco);
@@ -832,14 +833,11 @@
                 document.getElementById('dash-total-adm').innerText = formatCurrency(json.administrativo.total);
                 document.getElementById('dash-recolhimento-pago').innerText = formatCurrency(json.recolhimento.pago);
                 document.getElementById('dash-recolhimento-devido').innerText = formatCurrency(json.recolhimento.devido);
-                
                 document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
                 document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros);
                 document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco);
             }
         }
-
-        // --- 5. GRÁFICOS E HISTÓRICO ---
 
         async function carregarHistorico(force = false) {
             setLoading(true);
@@ -967,6 +965,10 @@
             const container = document.getElementById('conferencia-container');
             const empty = document.getElementById('empty-conferencia');
             container.innerHTML = '';
+            
+            // Variável para armazenar o elemento a destacar
+            let elementToHighlight = null;
+
             if(json.status === 'success' && json.data.length > 0) {
                 empty.classList.add('hidden');
                 const grupos = {};
@@ -976,11 +978,47 @@
                     itens.forEach(item => {
                         const isPago = item.status === 'Pago';
                         const switchHtml = `<label class="switch"><input type="checkbox" ${isPago ? 'checked' : ''} onchange="togglePagamento('${item.id}', '${item.origem}', this)"><span class="slider"></span></label><span class="switch-label">${isPago ? 'PAGO' : 'PENDENTE'}</span>`;
-                        rows += `<tr class="hover:bg-gray-50 border-b last:border-0 ${isPago ? 'bg-green-50' : ''}"><td class="px-6 py-4 text-xs font-bold uppercase text-gray-500 w-1/4">${item.origem}</td><td class="px-6 py-4 font-medium ${isPago ? 'text-gray-400 line-through' : 'text-gray-900'} w-1/3">${item.descricao}</td><td class="px-6 py-4 text-right font-bold w-1/4">${formatCurrency(item.valor)}</td><td class="px-6 py-4 text-center flex items-center justify-center">${switchHtml}</td></tr>`;
+                        
+                        // Badge de Competência
+                        const compHtml = `<span class="inline-block bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100 mt-1"><i class="far fa-calendar-alt mr-1"></i>${item.competencia}</span>`;
+
+                        // Usando Box Shadow em vez de border-l-4 para garantir que a cor apareça em todas as linhas
+                        const rowClass = isPago 
+                            ? 'bg-emerald-100 shadow-[inset_5px_0_0_0_#10b981] transition-colors duration-300' 
+                            : 'bg-white hover:bg-gray-50 shadow-[inset_5px_0_0_0_transparent] transition-colors duration-300';
+                            
+                        const textClass = isPago ? 'text-gray-400 line-through' : 'text-gray-900';
+
+                        // Adiciona ID único à linha
+                        rows += `<tr id="row-${item.id}" class="border-b last:border-0 ${rowClass}">
+                            <td class="px-6 py-4 w-1/4">
+                                <div class="text-xs font-bold uppercase text-gray-500">${item.origem}</div>
+                                ${compHtml}
+                            </td>
+                            <td class="px-6 py-4 font-medium ${textClass} w-1/3">${item.descricao}</td>
+                            <td class="px-6 py-4 text-right font-bold w-1/4">${formatCurrency(item.valor)}</td>
+                            <td class="px-6 py-4 text-center flex items-center justify-center">${switchHtml}</td>
+                        </tr>`;
                     });
                     container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100"><div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold text-gray-700">${nomeGrupo}</h3><span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-bold">${itens.length}</span></div><table class="w-full text-sm text-left"><tbody class="divide-y divide-gray-100">${rows}</tbody></table></div>`;
                 }
             } else { empty.classList.remove('hidden'); }
+
+            // Lógica de Destaque Pós-Renderização
+            if (pendingHighlightId) {
+                const el = document.getElementById(`row-${pendingHighlightId}`);
+                if (el) {
+                    // Scroll suave
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Adiciona classe de destaque
+                    el.classList.add('highlight-row');
+                    // Remove destaque após animação
+                    setTimeout(() => {
+                        el.classList.remove('highlight-row');
+                    }, 3000);
+                }
+                pendingHighlightId = null; // Limpa o ID pendente
+            }
         }
 
         async function carregarPendencias(force=false) {
@@ -1006,7 +1044,14 @@
                     let rows = '';
                     itens.forEach(row => {
                         let badgeClass = 'bg-red-100 text-red-600'; if(row.status === 'A Receber') badgeClass = 'bg-purple-100 text-purple-600';
-                        rows += `<tr class="hover:bg-red-50 border-b border-red-100 last:border-0"><td class="px-6 py-3 text-sm font-bold text-gray-700 w-1/6">${row.competencia}</td><td class="px-6 py-3 text-xs uppercase text-gray-500 w-1/6">${row.origem}</td><td class="px-6 py-3 text-sm text-gray-800 font-medium w-1/3">${row.descricao}</td><td class="px-6 py-3 text-right font-bold text-gray-800 w-1/6">${formatCurrency(row.valor)}</td><td class="px-6 py-3 text-center w-1/6"><span class="${badgeClass} font-bold text-xs px-2 py-1 rounded">${row.status}</span></td></tr>`;
+                        // Passa o ID original para a função de navegação
+                        rows += `<tr onclick="irParaPendencia('${row.competencia}', '${row.idOriginal}')" class="hover:bg-red-50 border-b border-red-100 last:border-0 cursor-pointer transition-colors" title="Clique para resolver em ${row.competencia}">
+                            <td class="px-6 py-3 text-sm font-bold text-gray-700 w-1/6">${row.competencia}</td>
+                            <td class="px-6 py-3 text-xs uppercase text-gray-500 w-1/6">${row.origem}</td>
+                            <td class="px-6 py-3 text-sm text-gray-800 font-medium w-1/3">${row.descricao}</td>
+                            <td class="px-6 py-3 text-right font-bold text-gray-800 w-1/6">${formatCurrency(row.valor)}</td>
+                            <td class="px-6 py-3 text-center w-1/6"><span class="${badgeClass} font-bold text-xs px-2 py-1 rounded">${row.status}</span></td>
+                        </tr>`;
                     });
                     container.innerHTML += `<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-red-100 mb-6"><div class="bg-red-50 px-6 py-3 border-b border-red-100 flex justify-between items-center"><h3 class="font-bold text-red-800 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i>${nomeGrupo}</h3><span class="bg-white text-red-600 text-xs px-2 py-1 rounded-full font-bold border border-red-200">${itens.length} itens</span></div><table class="w-full text-left"><tbody class="divide-y divide-red-50">${rows}</tbody></table></div>`;
                 }
@@ -1039,18 +1084,54 @@
         }
 
         async function togglePagamento(id, origem, checkbox) {
+            // Evita cliques duplos durante o processamento
             checkbox.disabled = true;
+            checkbox.classList.add('pointer-events-none');
+            
             const novoStatus = checkbox.checked ? 'Pago' : 'Pendente';
             const label = checkbox.parentElement.nextElementSibling;
             label.innerText = novoStatus === 'Pago' ? 'PAGO' : 'PENDENTE';
+            
+            // Atualização Visual Otimista (com Box Shadow em vez de border)
+            const tr = checkbox.closest('tr');
+            const desc = tr.querySelector('td:nth-child(2)'); // Célula da Descrição
+            
+            if(novoStatus === 'Pago') {
+                tr.className = "border-b last:border-0 bg-emerald-100 shadow-[inset_5px_0_0_0_#10b981] transition-colors duration-300";
+                desc.classList.add('text-gray-400', 'line-through');
+                desc.classList.remove('text-gray-900');
+            } else {
+                tr.className = "border-b last:border-0 bg-white hover:bg-gray-50 shadow-[inset_5px_0_0_0_transparent] transition-colors duration-300";
+                desc.classList.remove('text-gray-400', 'line-through');
+                desc.classList.add('text-gray-900');
+            }
+
             try {
-                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus, usuarioLog: currentUser }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'atualizarStatusPagamento', id, origem, novoStatus, usuarioLog: currentUser }) });
+                const json = await res.json();
+                
+                if(json.status !== 'success') {
+                    throw new Error('Erro no servidor'); // Força o catch se o servidor não confirmar
+                }
                 invalidateCache();
-                const tr = checkbox.closest('tr');
-                const desc = tr.querySelector('td:nth-child(2)');
-                if(novoStatus === 'Pago') { tr.classList.add('bg-green-50'); desc.classList.add('text-gray-400', 'line-through'); desc.classList.remove('text-gray-900'); }
-                else { tr.classList.remove('bg-green-50'); desc.classList.remove('text-gray-400', 'line-through'); desc.classList.add('text-gray-900'); }
-            } catch(e) { checkbox.checked = !checkbox.checked; showToast('Erro', 'error'); } finally { checkbox.disabled = false; }
+            } catch(e) { 
+                // Reverte visual em caso de erro
+                checkbox.checked = !checkbox.checked; 
+                label.innerText = checkbox.checked ? 'PAGO' : 'PENDENTE';
+                if(!checkbox.checked) {
+                    tr.className = "border-b last:border-0 bg-white hover:bg-gray-50 shadow-[inset_5px_0_0_0_transparent] transition-colors duration-300";
+                    desc.classList.remove('text-gray-400', 'line-through');
+                    desc.classList.add('text-gray-900');
+                } else {
+                    tr.className = "border-b last:border-0 bg-emerald-100 shadow-[inset_5px_0_0_0_#10b981] transition-colors duration-300";
+                    desc.classList.add('text-gray-400', 'line-through');
+                    desc.classList.remove('text-gray-900');
+                }
+                showToast('Erro ao atualizar', 'error'); 
+            } finally { 
+                checkbox.disabled = false; 
+                checkbox.classList.remove('pointer-events-none');
+            }
         }
 
         async function carregarTiposParaSelect() {
@@ -1138,7 +1219,7 @@
             lists.forEach(l => fetchData('getList', `sheet=${l}`));
         }
 
-        function handleLogin(e) { /* (Already defined above? No, this is cleaner) */
+        function handleLogin(e) { 
             e.preventDefault();
             const form = e.target;
             const btn = form.querySelector('button');
