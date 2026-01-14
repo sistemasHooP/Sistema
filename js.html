@@ -1,0 +1,430 @@
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwt5wH_wT65wfXyaBc78YK4ZBHcCi7zFATSQRk6yytCTHFlqCLs1Gc7JSS395aYNUmR/exec";
+    
+    // --- ESTADO GLOBAL ---
+    let currentCompetencia = "";
+    let authToken = localStorage.getItem('rpps_token');
+    let currentUser = localStorage.getItem('rpps_user');
+    let CACHE = {};
+    let servidoresList = []; // Cache local de servidores para busca rápida
+    let configData = {};     // Dados da empresa para impressão
+
+    // --- 1. FUNÇÕES UTILITÁRIAS ---
+    
+    function formatCurrency(v) { 
+        if(v === undefined || v === null || v === '') return 'R$ 0,00';
+        if(typeof v === 'number') return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        let str = v.toString();
+        if(str.includes(',')) { str = str.replace(/\./g, '').replace(',', '.'); }
+        str = str.replace(/[R$\s]/g, '');
+        return parseFloat(str || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); 
+    }
+    
+    function parseValue(v) {
+        if(typeof v === 'number') return v;
+        if(!v) return 0;
+        let str = v.toString();
+        if(str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
+        str = str.replace(/[R$\s]/g, '');
+        return parseFloat(str || 0);
+    }
+
+    function showToast(msg, type) { 
+        const t = document.getElementById('toast'); 
+        document.getElementById('toast-msg').innerText = msg; 
+        t.className = type; 
+        t.classList.add('show'); 
+        setTimeout(() => t.classList.remove('show'), 3000); 
+    }
+
+    function setupMoneyMask() { 
+        document.querySelectorAll('.money-mask').forEach(i => i.addEventListener('input', e => { 
+            let v = e.target.value.replace(/\D/g,""); 
+            v = (v/100).toFixed(2) + ""; 
+            e.target.value = "R$ " + v.replace(".",",").replace(/(\d)(?=(\d{3})+(?!\d))/g,"$1."); 
+        })); 
+    }
+
+    function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+    function setLoading(act) { document.getElementById('loadingOverlay').classList.toggle('hidden', !act); }
+
+    // --- 2. LÓGICA DE DADOS E API ---
+
+    async function fetchData(action, params = '') {
+        const cacheKey = `${action}_${currentCompetencia}_${params}`;
+        if (CACHE[cacheKey] && action !== 'getResumoMensal') { return CACHE[cacheKey]; } // Resumo sempre fresco
+        try {
+            const res = await fetch(`${API_URL}?action=${action}&competencia=${currentCompetencia}&token=${authToken}&${params}`);
+            const json = await res.json();
+            if (json.status === 'success') { CACHE[cacheKey] = json; }
+            return json;
+        } catch(e) { console.error(e); return {status:'error'}; }
+    }
+    
+    function invalidateCache() { CACHE = {}; }
+
+    // --- 3. CARREGAMENTO DE DADOS INICIAIS ---
+
+    async function preCarregarDados() {
+        // 1. Carrega Configurações (Para o PDF)
+        const conf = await fetchData('getConfiguracao');
+        if(conf.status === 'success') {
+            configData = conf.data;
+            preencherFormConfig(configData);
+        }
+
+        // 2. Carrega Servidores (Para Autocomplete)
+        const serv = await fetchData('getServidores');
+        if(serv.status === 'success') {
+            servidoresList = serv.data;
+            atualizarDatalistServidores();
+            renderListaServidores(serv.data);
+        }
+
+        // 3. Carrega Dados da Competência Atual
+        fetchData('getResumoMensal').then(renderResumo);
+        fetchData('getList', `sheet=HISTORICO_MARGEM`).then(json => renderListaMargem(json));
+        // Outros carregamentos em background
+        ['FOLHA_PAGAMENTO', 'DECIMO_TERCEIRO', 'OUTROS_BANCOS', 'CONSIGNADOS', 'PAGAMENTOS_RECORRENTES', 'IMPOSTO_RENDA'].forEach(l => fetchData('getList', `sheet=${l}`));
+    }
+
+    // --- 4. CONFIGURAÇÕES E SERVIDORES ---
+
+    function preencherFormConfig(data) {
+        const form = document.querySelector('#view-config form');
+        if(!form) return;
+        form.querySelector('[name="id"]').value = data.id || '';
+        for(let key in data) {
+            const input = form.querySelector(`[name="${key}"]`);
+            if(input) input.value = data[key];
+        }
+    }
+
+    function atualizarDatalistServidores() {
+        const dl = document.getElementById('list-servidores');
+        dl.innerHTML = '';
+        servidoresList.forEach(s => {
+            // s[1] = Nome, s[2] = CPF, s[3] = Matricula
+            const opt = document.createElement('option');
+            opt.value = s[1]; // Nome como valor
+            opt.dataset.cpf = s[2];
+            opt.dataset.matricula = s[3];
+            dl.appendChild(opt);
+        });
+    }
+
+    function preencherDadosServidor(input) {
+        const val = input.value;
+        const server = servidoresList.find(s => s[1] === val); // Busca exata pelo nome
+        if(server) {
+            document.getElementById('input-cpf').value = server[2];
+            document.getElementById('input-matricula').value = server[3];
+        }
+    }
+
+    function renderListaServidores(data) {
+        const tbody = document.getElementById('lista-servidores');
+        const empty = document.getElementById('empty-servidores');
+        tbody.innerHTML = '';
+        if(data && data.length > 0) {
+            empty.classList.add('hidden');
+            data.forEach(row => {
+                // row: [Competencia(ignorar), Nome, CPF, Matricula, Cargo, Nascimento, Admissao, ID]
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-6 py-3 font-bold text-gray-700">${row[1]}</td>
+                        <td class="px-6 py-3">${row[2]}</td>
+                        <td class="px-6 py-3 text-gray-500">${row[3]}</td>
+                        <td class="px-6 py-3 text-xs uppercase bg-teal-50 text-teal-800 rounded px-2 py-1 w-fit">${row[4]}</td>
+                        <td class="px-6 py-3 text-center">
+                            <button onclick="abrirModal('modal-servidor', 'adicionarServidor', {id:'${row[7]}', nome:'${row[1]}', cpf:'${row[2]}', matricula:'${row[3]}', cargo:'${row[4]}', nascimento:'${row[5].replace(/'/g,'')}', admissao:'${row[6].replace(/'/g,'')}'})" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fas fa-pencil-alt"></i></button>
+                            <button onclick="excluir('SERVIDORES', '${row[7]}')" class="text-red-500 hover:text-red-700 mx-1"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            empty.classList.remove('hidden');
+        }
+    }
+    
+    function filtrarServidoresTabela() {
+        const termo = document.getElementById('busca-servidor').value.toLowerCase();
+        const filtrados = servidoresList.filter(s => s[1].toLowerCase().includes(termo) || s[2].includes(termo));
+        renderListaServidores(filtrados);
+    }
+
+    // --- 5. CÁLCULO DE MARGEM ---
+
+    function calcularMargemVisual(form) {
+        const bruto = parseValue(form.querySelector('[name="bruto"]').value);
+        const descontos = parseValue(form.querySelector('[name="descontos"]').value);
+        const usoAtual = parseValue(form.querySelector('[name="usoAtual"]').value);
+        
+        const liquido = bruto - descontos;
+        const margemPermitida = liquido * 0.35; // 35% Fixo
+        const disponivel = margemPermitida - usoAtual;
+
+        document.getElementById('display-calc-liquido').innerText = formatCurrency(liquido);
+        document.getElementById('display-calc-permitida').innerText = formatCurrency(margemPermitida);
+        const dispEl = document.getElementById('display-calc-disponivel');
+        dispEl.innerText = formatCurrency(disponivel);
+
+        // Atualiza campos ocultos para envio
+        form.querySelector('[name="liquido"]').value = liquido.toFixed(2);
+        form.querySelector('[name="margemPermitida"]').value = margemPermitida.toFixed(2);
+        form.querySelector('[name="disponivel"]').value = disponivel.toFixed(2);
+        
+        if(disponivel < 0) { dispEl.className = "font-bold text-red-600"; } 
+        else { dispEl.className = "font-bold text-teal-600"; }
+    }
+
+    function renderListaMargem(json) {
+        const tbody = document.getElementById('lista-margem');
+        const empty = document.getElementById('empty-margem');
+        tbody.innerHTML = '';
+        if(json.status === 'success' && json.data.length > 0) {
+            empty.classList.add('hidden');
+            json.data.forEach(row => {
+                // row: [Comp, Nome, CPF, Matricula, Bruto, Desc, Liq, Margem35, Uso, Disponivel, Data, ID]
+                const disp = parseValue(row[9]);
+                const color = disp < 0 ? 'text-red-600' : 'text-teal-600';
+                
+                // Objeto para impressão
+                const dadosImpressao = encodeURIComponent(JSON.stringify({
+                    servidor: row[1], cpf: row[2], matricula: row[3],
+                    disponivel: row[9] // Valor formatado string ou numero
+                }));
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-teal-50">
+                        <td class="px-4 py-3 font-medium text-gray-800">${row[1]}<br><span class="text-[10px] text-gray-400">CPF: ${row[2]}</span></td>
+                        <td class="px-4 py-3 text-right text-gray-600">${formatCurrency(row[6])}</td>
+                        <td class="px-4 py-3 text-right font-bold ${color}">${formatCurrency(row[9])}</td>
+                        <td class="px-4 py-3 text-center flex justify-center gap-2">
+                            <button onclick="gerarDocumentoImpressao('${dadosImpressao}')" class="bg-teal-600 text-white p-2 rounded text-xs hover:bg-teal-700 shadow" title="Imprimir Carta"><i class="fas fa-print"></i></button>
+                            <button onclick="excluir('MARGEM','${row[11]}')" class="text-red-400 hover:bg-red-100 p-2 rounded transition"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        } else { empty.classList.remove('hidden'); }
+    }
+
+    // --- 6. IMPRESSÃO DA CARTA MARGEM (PDF) ---
+
+    function gerarDocumentoImpressao(dadosJson) {
+        const item = JSON.parse(decodeURIComponent(dadosJson));
+        
+        // Dados da Configuração (ou Padrão)
+        const inst = configData.nomeInst || "INSTITUTO DE PREVIDÊNCIA";
+        const cnpj = configData.cnpj || "00.000.000/0001-00";
+        const endereco = configData.endereco || "Endereço não configurado";
+        const cidade = configData.cidade ? configData.cidade.split('/')[0] : "Cidade";
+        const diretor = configData.diretor || "__________________________";
+        const cargo = configData.cargo || "Diretor(a)";
+        
+        // Data por extenso
+        const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+        const valDisponivel = formatCurrency(item.disponivel);
+
+        // Cria o HTML da impressão (baseado na classe .a4-paper do CSS)
+        const printHtml = `
+            <div id="print-area">
+                <div class="a4-paper">
+                    <div class="doc-header">
+                        <div class="doc-logo-area">IPR</div>
+                        <div style="font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 5px;">${inst}</div>
+                    </div>
+
+                    <div class="doc-title">CARTA MARGEM</div>
+
+                    <div class="doc-body">
+                        <p>O <strong>${inst}</strong>, inscrito no CNPJ nº ${cnpj}, com sede à ${endereco}, informa com relação a sua segurada <strong>${item.servidor}</strong>, inscrita no CPF sob o nº: ${item.cpf}, Matrícula ${item.matricula}, que a margem consignável de seus vencimentos é de <strong>${valDisponivel}</strong> junto a esta autarquia, como comprova o contracheque anexo.</p>
+                        <br>
+                        <p>A presente carta tem validade de 30 (trinta) dias após a data de emissão.</p>
+                        <br><br>
+                        <p align="right">${cidade}, ${hoje}.</p>
+                    </div>
+
+                    <div class="doc-signature">
+                        <div class="line-signature"></div>
+                        <div><strong>${diretor}</strong></div>
+                        <div>${cargo}</div>
+                        <div>CNPJ nº ${cnpj}</div>
+                    </div>
+
+                    <div class="doc-footer">
+                        <p><strong>${inst}</strong></p>
+                        <p>${endereco} - ${configData.cidade || ''}</p>
+                        <p>${configData.contato || ''}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Injeta no body, imprime e remove
+        const oldBody = document.body.innerHTML;
+        const mainContent = document.getElementById('mainContent');
+        
+        // Cria um elemento temporário para impressão
+        const printContainer = document.createElement('div');
+        printContainer.innerHTML = printHtml;
+        document.body.appendChild(printContainer);
+
+        window.print();
+
+        // Remove o elemento após impressão
+        document.body.removeChild(printContainer);
+    }
+
+    // --- 7. GENÉRICOS DE UI E FETCH ---
+
+    function showView(view) {
+        document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section'));
+        document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('tab-active'));
+        document.getElementById(`view-${view}`).classList.remove('hidden-section');
+        document.getElementById(`btn-${view}`).classList.add('tab-active');
+        
+        if(view === 'resumo') carregarResumo();
+        else if(view === 'margem') carregarLista('HISTORICO_MARGEM', 'lista-margem', 'empty-margem', renderListaMargem);
+        else if(view === 'servidores') preCarregarDados(); // Atualiza lista
+        else if(view === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
+        else if(view === 'config') preencherFormConfig(configData);
+        // ... outros carregamentos (mantidos da versão anterior)
+        else if(view === 'pendencias') carregarPendencias();
+        else if(view === 'conferencia') carregarConferencia();
+        else if(view === 'guias') carregarGuias();
+    }
+
+    async function carregarLista(sheet, tbodyId, emptyId, renderFn) {
+        setLoading(true);
+        const json = await fetchData('getList', `sheet=${sheet}`);
+        const tbody = document.getElementById(tbodyId);
+        const empty = document.getElementById(emptyId);
+        tbody.innerHTML = '';
+        if(json.status === 'success' && json.data.length > 0) {
+            empty.classList.add('hidden');
+            if(renderFn) {
+                 // Renderização Customizada (Margem e Servidores têm suas próprias funções acima)
+                 // Aqui usamos para as listas padrões financeiras
+                 let sumBruto=0, sumDesc=0, sumLiq=0;
+                 json.data.forEach(r => { 
+                    tbody.innerHTML += renderFn(r);
+                    // Somas simples para rodapés
+                    if(sheet.includes('FOLHA') || sheet.includes('DECIMO')) {
+                        sumBruto+=parseValue(r[2]); sumDesc+=parseValue(r[3]); sumLiq+=parseValue(r[4]);
+                    }
+                 });
+                 // Atualiza rodapés se existirem
+                 if(document.getElementById('total-folha-bruto') && sheet.includes('FOLHA')) {
+                    document.getElementById('total-folha-bruto').innerText = formatCurrency(sumBruto);
+                    document.getElementById('total-folha-desc').innerText = '-'+formatCurrency(sumDesc);
+                    document.getElementById('total-folha-liq').innerText = formatCurrency(sumLiq);
+                    document.getElementById('foot-folha').classList.remove('hidden');
+                 }
+            } else if (sheet === 'HISTORICO_MARGEM') {
+                renderListaMargem(json); // Redireciona para render específico
+            }
+        } else {
+            empty.classList.remove('hidden');
+            const foot = document.getElementById(tbodyId.replace('lista','foot'));
+            if(foot) foot.classList.add('hidden');
+        }
+        setLoading(false);
+    }
+    
+    // Renderers Simples (Mantidos)
+    function getActions(key, row, idIdx) {
+        return `<button onclick="excluir('${key}','${row[idIdx]}')" class="text-red-400 hover:bg-red-100 p-1 rounded"><i class="fas fa-trash"></i></button>`;
+    }
+    function renderRowFolha(row) { 
+        return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 8)}</td></tr>`; 
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const data = Object.fromEntries(fd.entries());
+        data.action = data.id ? 'editarRegistro' : data.action_type;
+        data.competencia = currentCompetencia;
+        data.usuarioLog = currentUser;
+        
+        // Fecha modal se existir
+        const modalEl = e.target.closest('div[id^="modal"]');
+        if(modalEl) toggleModal(modalEl.id);
+
+        invalidateCache();
+        setLoading(true);
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify(data)});
+            const json = await res.json();
+            showToast(json.status==='success'?'Salvo!':'Erro', json.status);
+            
+            // Recarrega view atual
+            const activeView = document.querySelector('.nav-btn.tab-active').id.replace('btn-', '');
+            showView(activeView);
+            
+            // Se salvou config, atualiza localmente
+            if(data.action_type === 'salvarConfiguracao') { configData = data; }
+
+        } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
+    }
+    
+    // Funções de Exclusão, Login, etc. (Mantidas da V1.60)
+    function openConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; document.getElementById('modal-confirm').classList.remove('hidden'); window.confirmCallback=cb; }
+    function closeConfirm(y) { document.getElementById('modal-confirm').classList.add('hidden'); if(y && window.confirmCallback) window.confirmCallback(); }
+    async function excluir(sheet, id) { openConfirm("Excluir?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheet, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); const v=document.querySelector('.nav-btn.tab-active').id.replace('btn-',''); showView(v); setLoading(false); }); }
+    
+    function handleLogin(e) { 
+        e.preventDefault(); const btn=e.target.querySelector('button'); btn.disabled=true; btn.innerText='Entrando...';
+        const data = Object.fromEntries(new FormData(e.target).entries()); data.action='login';
+        fetch(API_URL, {method:'POST', body:JSON.stringify(data)}).then(r=>r.json()).then(j=>{
+            if(j.status==='success'){ localStorage.setItem('rpps_token', j.token); localStorage.setItem('rpps_user', j.usuario); location.reload(); }
+            else { document.getElementById('login-msg').innerText=j.message; document.getElementById('login-msg').classList.remove('hidden'); btn.disabled=false; btn.innerText='ENTRAR'; }
+        });
+    }
+    function logout() { localStorage.removeItem('rpps_token'); location.reload(); }
+
+    function mudarCompetencia(v) {
+        if(!v) return;
+        currentCompetencia = `${v.split('-')[1]}/${v.split('-')[0]}`;
+        document.querySelectorAll('#mobile-comp').forEach(e => e.innerText = currentCompetencia);
+        CACHE = {};
+        preCarregarDados();
+    }
+
+    // --- INIT ---
+    window.onload = function() {
+        if(!authToken) { document.getElementById('login-screen').style.display = 'flex'; return; }
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('user-display').innerText = currentUser || 'Usuário';
+        
+        const d = new Date();
+        const comp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        document.getElementById('inputCompetencia').value = comp;
+        mudarCompetencia(comp);
+        
+        setupMoneyMask();
+    };
+    
+    // Funções Placeholder para não quebrar referências antigas no HTML
+    function carregarResumo() { fetchData('getResumoMensal').then(j => {
+        if(j.status==='success') {
+            document.getElementById('dash-total-bruto').innerText = formatCurrency((j.folha.total_bruto_normal||0)+(j.folha.total_bruto_decimo||0));
+            document.getElementById('dash-total-liquido').innerText = formatCurrency(j.folha.total_geral);
+            document.getElementById('dash-total-bradesco').innerText = formatCurrency(j.bancos.bradesco);
+            // ... outros dashs
+        }
+    });}
+    function carregarPendencias() { /* Logica de pendencia */ }
+    function carregarConferencia() { /* Logica conferencia */ }
+    function carregarGuias() { /* Logica guias */ }
+    function abrirModal(id, act, data) {
+        const m = document.getElementById(id); const f = m.querySelector('form'); f.reset();
+        f.querySelector('[name="action_type"]').value = act;
+        f.querySelector('[name="id"]').value = data ? data.id : '';
+        if(data) { for(let k in data) { const i = f.querySelector(`[name="${k}"]`); if(i) i.value = data[k]; } }
+        toggleModal(id);
+    }
+    function calcularLiquidoVisual(f) { /* Calculo simples folha */ }
+</script>
