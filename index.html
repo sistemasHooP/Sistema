@@ -87,7 +87,7 @@
                 <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.33 - Correção de Referência</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.34 - Totais Automáticos</p>
         </div>
     </div>
 
@@ -164,7 +164,7 @@
                 <i class="fas fa-gift w-6"></i> 13º Salário
             </button>
             <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-exchange-alt w-6"></i> Outros Bancos
+                <i class="fas fa-exchange-alt w-6"></i> PGMT Outros Bancos
             </button>
             <button onclick="showView('consignados')" id="btn-consignados" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
                 <i class="fas fa-hand-holding-usd w-6"></i> Consignados
@@ -236,7 +236,7 @@
                     <!-- Linha 2 -->
                     <!-- Outros Bancos -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Outros Bancos</p>
+                        <p class="text-xs text-gray-500 uppercase font-bold">PGMT Outros Bancos</p>
                         <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
                     </div>
 
@@ -404,6 +404,13 @@
                             </tr>
                         </thead>
                         <tbody id="lista-imposto" class="divide-y divide-blue-50"></tbody>
+                        <tfoot id="foot-imposto" class="bg-gray-100 font-bold text-gray-700 hidden">
+                            <tr>
+                                <td colspan="2" class="px-6 py-3 text-right">TOTAL:</td>
+                                <td class="px-6 py-3 text-right" id="total-imposto-val"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                     <div id="empty-imposto" class="p-8 text-center text-gray-500 hidden">Nenhum lançamento.</div>
                 </div>
@@ -413,28 +420,82 @@
             <div id="view-folha" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Folha Pagamento</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-folha" class="divide-y divide-blue-50"></tbody></table><div id="empty-folha" class="p-4 text-center hidden">Vazio</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
+                            <tr>
+                                <th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-folha" class="divide-y divide-blue-50"></tbody>
+                        <tfoot id="foot-folha" class="bg-gray-100 font-bold text-gray-700 hidden">
+                            <tr>
+                                <td class="px-4 py-3 text-right">TOTAL:</td>
+                                <td class="px-4 py-3 text-right" id="total-folha-bruto"></td>
+                                <td class="px-4 py-3 text-right text-red-500" id="total-folha-desc"></td>
+                                <td class="px-4 py-3 text-right text-blue-700" id="total-folha-liq"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div id="empty-folha" class="p-4 text-center hidden">Vazio</div>
                 </div>
             </div>
             
             <div id="view-decimo" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
+                            <tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr>
+                        </thead>
+                        <tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody>
+                        <tfoot id="foot-decimo" class="bg-gray-100 font-bold text-gray-700 hidden">
+                            <tr>
+                                <td class="px-4 py-3 text-right">TOTAL:</td>
+                                <td class="px-4 py-3 text-right" id="total-decimo-bruto"></td>
+                                <td class="px-4 py-3 text-right text-red-500" id="total-decimo-desc"></td>
+                                <td class="px-4 py-3 text-right text-blue-700" id="total-decimo-liq"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
                 </div>
             </div>
             
             <div id="view-outros" class="view-section hidden-section">
-                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div>
+                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">PGMT Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros" class="divide-y divide-blue-50"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                        <tbody id="lista-outros" class="divide-y divide-blue-50"></tbody>
+                        <tfoot id="foot-outros" class="bg-gray-100 font-bold text-gray-700 hidden">
+                            <tr>
+                                <td colspan="3" class="px-6 py-3 text-right">TOTAL:</td>
+                                <td class="px-6 py-3 text-right" id="total-outros-val"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div id="empty-outros" class="p-4 text-center hidden">Vazio</div>
                 </div>
             </div>
             
             <div id="view-consignados" class="view-section hidden-section">
                 <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
                 <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-consignados" class="divide-y divide-blue-50"></tbody></table><div id="empty-consignados" class="p-4 text-center hidden">Vazio</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                        <tbody id="lista-consignados" class="divide-y divide-blue-50"></tbody>
+                        <tfoot id="foot-consignados" class="bg-gray-100 font-bold text-gray-700 hidden">
+                            <tr>
+                                <td class="px-6 py-3 text-right">TOTAL:</td>
+                                <td class="px-6 py-3 text-right" id="total-consignados-val"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div id="empty-consignados" class="p-4 text-center hidden">Vazio</div>
                 </div>
             </div>
             
@@ -442,13 +503,35 @@
                 <div class="mb-8">
                     <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-blue-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div>
                     <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                        <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes" class="divide-y divide-blue-50"></tbody></table><div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                            <tbody id="lista-recorrentes" class="divide-y divide-blue-50"></tbody>
+                            <tfoot id="foot-recorrentes" class="bg-gray-100 font-bold text-gray-700 hidden">
+                                <tr>
+                                    <td class="px-6 py-3 text-right">TOTAL:</td>
+                                    <td class="px-6 py-3 text-right" id="total-recorrentes-val"></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div>
                     </div>
                 </div>
                 <div>
                     <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div>
                     <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                        <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais" class="divide-y divide-blue-50"></tbody></table><div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
+                            <tbody id="lista-eventuais" class="divide-y divide-blue-50"></tbody>
+                            <tfoot id="foot-eventuais" class="bg-gray-100 font-bold text-gray-700 hidden">
+                                <tr>
+                                    <td class="px-6 py-3 text-right">TOTAL:</td>
+                                    <td class="px-6 py-3 text-right" id="total-eventuais-val"></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div>
                     </div>
                 </div>
             </div>
@@ -509,6 +592,15 @@
             str = str.replace(/[R$\s]/g, '');
             
             return parseFloat(str || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); 
+        }
+        
+        function parseValue(v) {
+            if(typeof v === 'number') return v;
+            if(!v) return 0;
+            let str = v.toString();
+            if(str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
+            str = str.replace(/[R$\s]/g, '');
+            return parseFloat(str || 0);
         }
 
         function showToast(msg, type) { 
@@ -606,22 +698,92 @@
 
         // --- 4. FUNÇÕES DE CARREGAMENTO (LOGICA PRINCIPAL) ---
 
-        function renderLista(json, tbodyId, emptyId, renderFn) {
+        function renderLista(json, tbodyId, emptyId, renderFn, sheetType) {
             const tbody = document.getElementById(tbodyId);
             tbody.innerHTML = '';
+            
+            // Variáveis de soma
+            let sumBruto = 0, sumDesc = 0, sumLiq = 0;
+            
             if(json.data && json.data.length > 0) {
                 document.getElementById(emptyId).classList.add('hidden');
-                json.data.forEach(r => tbody.innerHTML += renderFn(r));
-            } else { document.getElementById(emptyId).classList.remove('hidden'); }
+                json.data.forEach(r => {
+                    tbody.innerHTML += renderFn(r);
+                    
+                    // Cálculo dos totais baseado no tipo de aba
+                    if(sheetType === 'FOLHA' || sheetType === 'DECIMO') {
+                        // Indices: 2=Bruto, 3=Desc, 4=Liquido
+                        sumBruto += parseValue(r[2]);
+                        sumDesc += parseValue(r[3]);
+                        sumLiq += parseValue(r[4]);
+                    } else if (sheetType === 'OUTROS') {
+                        // Index 4 = Valor
+                        sumLiq += parseValue(r[4]);
+                    } else if (sheetType === 'CONSIGNADOS' || sheetType === 'EVENTUAIS') {
+                        // Index 2 = Valor
+                        sumLiq += parseValue(r[2]);
+                    } else if (sheetType === 'RECORRENTES' || sheetType === 'IMPOSTO') {
+                        // Index 3 = Valor
+                        sumLiq += parseValue(r[3]);
+                    }
+                });
+                
+                // Atualiza o rodapé com os totais
+                updateFooter(sheetType, sumBruto, sumDesc, sumLiq);
+                
+            } else { 
+                document.getElementById(emptyId).classList.remove('hidden'); 
+                // Hide footer if empty
+                const footerId = getFooterId(sheetType);
+                if(footerId) document.getElementById(footerId).classList.add('hidden');
+            }
+        }
+        
+        function getFooterId(type) {
+            if(type === 'FOLHA') return 'foot-folha';
+            if(type === 'DECIMO') return 'foot-decimo';
+            if(type === 'OUTROS') return 'foot-outros';
+            if(type === 'CONSIGNADOS') return 'foot-consignados';
+            if(type === 'RECORRENTES') return 'foot-recorrentes';
+            if(type === 'EVENTUAIS') return 'foot-eventuais';
+            if(type === 'IMPOSTO') return 'foot-imposto';
+            return null;
+        }
+
+        function updateFooter(type, bruto, desc, liq) {
+            const fid = getFooterId(type);
+            if(!fid) return;
+            const foot = document.getElementById(fid);
+            foot.classList.remove('hidden');
+            
+            if(type === 'FOLHA' || type === 'DECIMO') {
+                document.getElementById(`total-${type.toLowerCase()}-bruto`).innerText = formatCurrency(bruto);
+                document.getElementById(`total-${type.toLowerCase()}-desc`).innerText = '-' + formatCurrency(desc);
+                document.getElementById(`total-${type.toLowerCase()}-liq`).innerText = formatCurrency(liq);
+            } else {
+                // Para tabelas simples, usamos o sufixo -val no ID
+                const el = document.getElementById(`total-${type.toLowerCase()}-val`);
+                if(el) el.innerText = formatCurrency(liq);
+            }
         }
 
         async function carregarLista(sheet, tbodyId, emptyId, renderFn, force = false) {
             if(force) invalidateCache();
             const cacheKey = `getList_${currentCompetencia}_sheet=${sheet}`;
-            if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn); return; }
+            
+            let sheetType = '';
+            if(sheet === 'FOLHA_PAGAMENTO') sheetType = 'FOLHA';
+            else if(sheet === 'DECIMO_TERCEIRO') sheetType = 'DECIMO';
+            else if(sheet === 'OUTROS_BANCOS') sheetType = 'OUTROS';
+            else if(sheet === 'CONSIGNADOS') sheetType = 'CONSIGNADOS';
+            else if(sheet === 'PAGAMENTOS_RECORRENTES') sheetType = 'RECORRENTES';
+            else if(sheet === 'OUTROS_PAGAMENTOS') sheetType = 'EVENTUAIS';
+            else if(sheet === 'IMPOSTO_RENDA') sheetType = 'IMPOSTO';
+
+            if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn, sheetType); return; }
             setLoading(true);
             const json = await fetchData('getList', `sheet=${sheet}`);
-            renderLista(json, tbodyId, emptyId, renderFn);
+            renderLista(json, tbodyId, emptyId, renderFn, sheetType);
             setLoading(false);
         }
 
@@ -631,7 +793,6 @@
             document.getElementById(`view-${view}`).classList.remove('hidden-section');
             document.getElementById(`btn-${view}`).classList.add('tab-active');
             
-            // Aqui as funções renderRow... já estão definidas, evitando ReferenceError
             if(view === 'resumo') carregarResumo();
             else if(view === 'graficos') carregarHistorico();
             else if(view === 'conferencia') carregarConferencia();
