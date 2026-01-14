@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão RPPS - Controle Financeiro</title>
+    <base target="_top">
     
     <!-- Bibliotecas Externas (CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,13 +13,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <!-- Injeção do Arquivo de Estilos (CSS) -->
+    <!-- Se este arquivo falhar, o Tailwind abaixo garante o layout básico -->
     <?!= include('Estilo'); ?>
 </head>
-<body class="text-gray-800 h-screen flex flex-col md:flex-row overflow-hidden">
+<body class="text-gray-800 h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-gray-100">
 
-    <!-- TELA DE LOGIN -->
-    <div id="login-screen">
-        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+    <!-- TELA DE LOGIN (Blindada com Tailwind 'fixed inset-0 z-50') -->
+    <!-- Adicionamos 'hidden' por padrão para não piscar na tela se o JS demorar -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-[#1e3a8a] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm mx-4">
             <div class="text-center mb-6">
                 <i class="fas fa-university text-blue-800 text-5xl mb-2"></i>
                 <h2 class="text-2xl font-bold text-gray-800">Gestão RPPS</h2>
@@ -33,24 +36,27 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2">Senha</label>
                     <input type="password" name="senha" class="w-full p-3 border rounded bg-gray-50 focus:border-blue-500 focus:outline-none" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
+                <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200 shadow-lg">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.80 - Modular</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.85 - Layout Fixo</p>
         </div>
     </div>
 
     <!-- TOAST DE NOTIFICAÇÃO -->
-    <div id="toast"><i class="fas fa-check-circle mr-2"></i><span id="toast-msg">Mensagem</span></div>
+    <div id="toast" class="fixed top-8 left-1/2 transform -translate-x-1/2 z-[80] bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-2 opacity-0 invisible transition-all duration-300">
+        <i class="fas fa-check-circle text-green-400"></i>
+        <span id="toast-msg">Mensagem</span>
+    </div>
     
     <!-- LOADING OVERLAY -->
-    <div id="loadingOverlay" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center hidden backdrop-blur-sm">
-        <div class="loader mb-4"></div>
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-[60] flex flex-col items-center justify-center hidden backdrop-blur-sm">
+        <div class="loader mb-4 border-4 border-gray-200 border-t-blue-600 rounded-full w-12 h-12 animate-spin"></div>
         <p class="text-blue-600 font-bold text-lg animate-pulse">Processando...</p>
     </div>
 
     <!-- MODAL CONFIRMAÇÃO PERSONALIZADO -->
-    <div id="modal-confirm" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="modal-confirm" class="fixed inset-0 bg-black/50 z-[70] hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border-t-4 border-blue-600">
             <div class="text-center">
                 <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
@@ -67,350 +73,376 @@
     </div>
 
     <!-- SIDEBAR -->
-    <aside class="w-full md:w-64 bg-white shadow-lg flex flex-col z-20">
+    <aside class="w-full md:w-64 bg-white shadow-lg flex flex-col z-20 flex-shrink-0">
         <div class="p-6 bg-blue-800 text-white">
             <div class="flex justify-between items-start mb-2">
-                <h1 class="text-lg font-bold"><i class="fas fa-university mr-2"></i>Gestão RPPS</h1>
-                <button onclick="logout()" class="text-xs text-blue-200 hover:text-white" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                <h1 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-university"></i> Gestão RPPS</h1>
+                <button onclick="logout()" class="text-xs text-blue-200 hover:text-white transition-colors" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
             </div>
             <div class="flex justify-between items-center mb-4">
-                <p class="text-xs text-blue-200 truncate" id="user-display">...</p>
+                <p class="text-xs text-blue-200 truncate max-w-[120px]" id="user-display">...</p>
                 <button onclick="abrirModal('modal-novo-usuario', 'adicionarUsuario')" class="text-xs text-blue-300 hover:text-white" title="Novo Usuário"><i class="fas fa-user-plus"></i></button>
             </div>
-            <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência (Mês/Ano)</label>
-            <div class="relative">
+            <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência</label>
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-blue-300">
+                    <i class="far fa-calendar-alt"></i>
+                </div>
                 <input type="month" id="inputCompetencia" onchange="mudarCompetencia(this.value)" 
-                       class="w-full p-3 bg-blue-700 border border-blue-600 rounded text-white font-bold text-center focus:outline-none focus:border-white shadow-inner cursor-pointer hover:bg-blue-600 transition-colors">
+                       class="w-full pl-9 p-2 bg-blue-700 border border-blue-600 rounded text-white text-sm font-bold focus:outline-none focus:border-white shadow-inner cursor-pointer hover:bg-blue-600 transition-colors">
             </div>
-            <p class="text-[10px] text-center mt-2 text-blue-300">Selecione para mudar o mês</p>
         </div>
 
-        <nav class="flex-1 overflow-y-auto py-4">
-            <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active">
-                <i class="fas fa-chart-pie w-6"></i> Resumo
+        <nav class="flex-1 overflow-y-auto py-2 space-y-1">
+            <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active border-l-4 border-transparent hover:border-blue-300">
+                <i class="fas fa-chart-pie w-6 text-center"></i> <span class="ml-2">Resumo</span>
             </button>
-            <button onclick="showView('graficos')" id="btn-graficos" class="nav-btn w-full text-left px-6 py-3 hover:bg-indigo-50 text-indigo-800 font-bold transition-colors flex items-center">
-                <i class="fas fa-chart-bar w-6"></i> Análise Gráfica
+            <button onclick="showView('graficos')" id="btn-graficos" class="nav-btn w-full text-left px-6 py-3 hover:bg-indigo-50 text-indigo-800 font-bold transition-colors flex items-center border-l-4 border-transparent hover:border-indigo-300">
+                <i class="fas fa-chart-bar w-6 text-center"></i> <span class="ml-2">Análise Gráfica</span>
             </button>
             
             <!-- BOTÃO MARGEM -->
-            <button onclick="showView('margem')" id="btn-margem" class="nav-btn w-full text-left px-6 py-3 hover:bg-teal-50 text-teal-800 font-bold transition-colors flex items-center">
-                <i class="fas fa-calculator w-6"></i> Calculadora Margem
+            <button onclick="showView('margem')" id="btn-margem" class="nav-btn w-full text-left px-6 py-3 hover:bg-teal-50 text-teal-800 font-bold transition-colors flex items-center border-l-4 border-transparent hover:border-teal-300">
+                <i class="fas fa-calculator w-6 text-center"></i> <span class="ml-2">Margem Consignável</span>
             </button>
 
-            <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center">
-                <i class="fas fa-check-double w-6"></i> Conferência Pagtos
+            <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center border-l-4 border-transparent hover:border-green-300">
+                <i class="fas fa-check-double w-6 text-center"></i> <span class="ml-2">Conferência</span>
             </button>
             
-            <div class="border-t border-gray-100 my-2"></div>
+            <div class="px-6 py-2">
+                <div class="border-t border-gray-200"></div>
+                <p class="text-[10px] uppercase font-bold text-gray-400 mt-2">Financeiro</p>
+            </div>
+
             <button onclick="showView('pendencias')" id="btn-pendencias" class="nav-btn w-full text-left px-6 py-3 bg-red-50 text-red-700 font-bold border-l-4 border-red-500 hover:bg-red-100 transition-colors flex items-center">
-                <i class="fas fa-exclamation-circle w-6"></i> Pendências
+                <i class="fas fa-exclamation-circle w-6 text-center"></i> <span class="ml-2">Pendências</span>
             </button>
-            <button onclick="showView('guias')" id="btn-guias" class="nav-btn w-full text-left px-6 py-3 hover:bg-purple-50 text-purple-800 font-medium transition-colors flex items-center">
-                <i class="fas fa-landmark w-6"></i> Recolhimento Guias
+            <button onclick="showView('guias')" id="btn-guias" class="nav-btn w-full text-left px-6 py-3 hover:bg-purple-50 text-purple-800 font-medium transition-colors flex items-center border-l-4 border-transparent hover:border-purple-300">
+                <i class="fas fa-landmark w-6 text-center"></i> <span class="ml-2">Guias Recolhimento</span>
             </button>
 
-            <!-- CADASTROS -->
-            <div class="border-t border-gray-100 my-2"></div>
-            <button onclick="showView('folha')" id="btn-folha" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-users w-6"></i> Folha Pagamento
+            <button onclick="showView('folha')" id="btn-folha" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-users w-6 text-center"></i> <span class="ml-2">Folha Pagamento</span>
             </button>
-            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-gift w-6"></i> 13º Salário
+            <button onclick="showView('decimo')" id="btn-decimo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-gift w-6 text-center"></i> <span class="ml-2">13º Salário</span>
             </button>
-            <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-exchange-alt w-6"></i> PGMT Outros Bancos
+            <button onclick="showView('outros')" id="btn-outros" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-exchange-alt w-6 text-center"></i> <span class="ml-2">Outros Bancos</span>
             </button>
-            <button onclick="showView('consignados')" id="btn-consignados" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-hand-holding-usd w-6"></i> Consignados
+            <button onclick="showView('consignados')" id="btn-consignados" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-hand-holding-usd w-6 text-center"></i> <span class="ml-2">Consignados</span>
             </button>
-            <button onclick="showView('adm')" id="btn-adm" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-file-contract w-6"></i> Assessorias e Desp.
+            <button onclick="showView('adm')" id="btn-adm" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-file-contract w-6 text-center"></i> <span class="ml-2">Administrativo</span>
             </button>
-            
-            <div class="border-t border-gray-100 my-2"></div>
-            <button onclick="showView('imposto')" id="btn-imposto" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center">
-                <i class="fas fa-file-invoice-dollar w-6"></i> Imposto de Renda
+            <button onclick="showView('imposto')" id="btn-imposto" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center border-l-4 border-transparent">
+                <i class="fas fa-file-invoice-dollar w-6 text-center"></i> <span class="ml-2">Imposto de Renda</span>
             </button>
         </nav>
     </aside>
 
     <!-- ÁREA PRINCIPAL -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-100 relative">
-        <header class="bg-blue-800 text-white shadow-sm p-4 flex justify-between items-center md:hidden">
-            <span class="font-bold text-lg">RPPS</span>
-            <span id="mobile-comp" class="text-sm font-bold bg-blue-700 px-2 py-1 rounded">--/----</span>
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 relative w-full">
+        <header class="bg-blue-800 text-white shadow-md p-4 flex justify-between items-center md:hidden z-10">
+            <span class="font-bold text-lg"><i class="fas fa-university mr-2"></i>RPPS</span>
+            <span id="mobile-comp" class="text-xs font-bold bg-blue-700 px-2 py-1 rounded shadow-inner">--/----</span>
         </header>
 
         <!-- CONTEÚDO SCROLLÁVEL -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8" id="mainContent">
             
             <!-- VIEW: RESUMO -->
-            <div id="view-resumo" class="view-section">
+            <div id="view-resumo" class="view-section animate-fade-in">
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
-                        <p class="text-sm text-gray-500">Competência <span class="current-comp font-bold text-blue-600">--/----</span></p>
+                        <p class="text-sm text-gray-500">Visão Geral de <span class="current-comp font-bold text-blue-600">--/----</span></p>
                     </div>
-                    <button onclick="carregarResumo(true)" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
+                    <button onclick="carregarResumo(true)" class="text-sm bg-white border border-gray-200 px-3 py-1 rounded shadow-sm hover:bg-gray-50 text-blue-600 transition-colors"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
                 
-                <!-- GRID DE CARDS -->
+                <!-- GRID DE CARDS PRINCIPAIS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     
-                    <!-- Folha Bruta (Total) - AZUL ESCURO -->
-                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-800 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-coins text-6xl text-blue-800"></i></div>
-                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Bruta (Total)</p>
-                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bruto">R$ 0,00</h3>
-                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
-                            <i class="fas fa-plus mr-1"></i> Proventos Folha + 13º
-                        </div>
-                    </div>
-
-                    <!-- Folha Líquida - AZUL CLARO -->
-                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-filter text-6xl text-blue-500"></i></div>
-                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Líquida</p>
-                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-liquido">R$ 0,00</h3>
-                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
-                            <i class="fas fa-calculator mr-1"></i> Folha Bruta - Descontos
-                        </div>
-                    </div>
-
-                    <!-- Líquido Bradesco - VERDE -->
-                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 relative">
-                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-university text-6xl text-green-500"></i></div>
-                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Líquido Bradesco (Est.)</p>
-                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bradesco">R$ 0,00</h3>
-                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
-                            <i class="fas fa-minus mr-1"></i> Folha Líquida - Outros Bancos
-                        </div>
-                    </div>
-
-                    <!-- Linha 2 -->
-                    <!-- Outros Bancos -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
-                        <p class="text-xs text-gray-500 uppercase font-bold">PGMT Outros Bancos</p>
-                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
-                    </div>
-
-                    <!-- Consignados -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Consignados</p>
-                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3>
-                    </div>
-
-                    <!-- Assessorias -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Assessorias e Desp.</p>
-                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-adm">R$ 0,00</h3>
-                    </div>
-
-                    <!-- Linha 3 -->
-                    <!-- Imposto de Renda -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-gray-600">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Imposto de Renda</p>
-                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-imposto">R$ 0,00</h3>
-                    </div>
-
-                    <!-- Recolhimento Guias -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-800">
+                    <!-- Folha Bruta (Total) -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-800 relative overflow-hidden hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Recolhimento Guias</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-recolhimento-pago">R$ 0,00</h3>
-                                <p class="text-xs text-gray-400 mt-1">De: <span id="dash-recolhimento-devido">R$ 0,00</span> (Devido)</p>
+                                <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Folha Bruta (Total)</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bruto">R$ 0,00</h3>
+                                <span class="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded mt-2 inline-block">Proventos Folha + 13º</span>
                             </div>
-                            <div class="text-purple-800"><i class="fas fa-landmark text-2xl"></i></div>
+                            <div class="bg-blue-100 p-3 rounded-full text-blue-800"><i class="fas fa-coins text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Folha Líquida -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 relative overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Folha Líquida</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-liquido">R$ 0,00</h3>
+                                <span class="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded mt-2 inline-block">Bruto - Descontos</span>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full text-blue-600"><i class="fas fa-filter text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Líquido Bradesco -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 relative hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Líquido Bradesco</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bradesco">R$ 0,00</h3>
+                                <span class="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded mt-2 inline-block">Líquido - Outros Bancos</span>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full text-green-600"><i class="fas fa-university text-xl"></i></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Conferência -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h3 class="font-bold text-lg mb-4 text-gray-800">Conferência da Folha</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <tbody class="divide-y divide-gray-100">
-                                <tr>
-                                    <td class="px-4 py-3 font-medium">Total (Folha + 13º)</td>
-                                    <td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-3">(-) Outros Bancos</td>
-                                    <td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td>
-                                </tr>
-                                <tr class="bg-green-50">
-                                    <td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td>
-                                    <td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- CARDS SECUNDÁRIOS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-2 border-orange-500">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Outros Bancos</p>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1" id="dash-total-outros">R$ 0,00</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-2 border-purple-500">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Consignados</p>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1" id="dash-total-consig">R$ 0,00</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-2 border-indigo-500">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Administrativo</p>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1" id="dash-total-adm">R$ 0,00</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-2 border-gray-600">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Imposto Renda</p>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1" id="dash-total-imposto">R$ 0,00</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Recolhimento Guias -->
+                    <div class="lg:col-span-1 bg-purple-50 rounded-xl p-6 border border-purple-100">
+                        <h3 class="font-bold text-purple-900 mb-4 flex items-center"><i class="fas fa-landmark mr-2"></i>Guias Recolhimento</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-purple-600 uppercase font-bold">Total Pago</p>
+                                <h2 class="text-3xl font-bold text-purple-800" id="dash-recolhimento-pago">R$ 0,00</h2>
+                            </div>
+                            <div class="w-full bg-purple-200 h-2 rounded-full overflow-hidden">
+                                <div class="bg-purple-600 h-full w-0" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-sm text-purple-700">
+                                <span>Devido Total:</span>
+                                <span class="font-bold" id="dash-recolhimento-devido">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conferência -->
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2">Conferência Rápida</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="px-4 py-3 font-medium text-gray-600">Total Líquido (Folha + 13º)</td>
+                                        <td class="px-4 py-3 text-right font-bold text-blue-600" id="conf-folha">R$ 0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 text-gray-500">(-) Pagamentos Outros Bancos</td>
+                                        <td class="px-4 py-3 text-right text-red-500" id="conf-outros">R$ 0,00</td>
+                                    </tr>
+                                    <tr class="bg-green-50 rounded-lg">
+                                        <td class="px-4 py-3 font-bold text-green-900">(=) Previsão Débito Bradesco</td>
+                                        <td class="px-4 py-3 text-right font-extrabold text-green-700 text-lg" id="conf-bradesco">R$ 0,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- VIEW: GRÁFICOS E TABELA ANALÍTICA -->
-            <div id="view-graficos" class="view-section hidden-section">
+            <div id="view-graficos" class="view-section hidden-section animate-fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <h2 class="text-2xl font-bold text-indigo-800"><i class="fas fa-chart-bar mr-2"></i>Análise Financeira</h2>
-                    <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm">
+                    <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm border border-gray-200">
                         <label class="text-sm font-bold text-gray-600">Ano:</label>
-                        <input type="number" id="chartYearInput" class="border border-gray-300 rounded px-2 py-1 w-20 text-center font-bold text-indigo-700" min="2020" max="2030" onchange="carregarHistorico(true)">
+                        <input type="number" id="chartYearInput" class="border border-gray-300 rounded px-2 py-1 w-20 text-center font-bold text-indigo-700 focus:outline-none focus:border-indigo-500" min="2020" max="2030" onchange="carregarHistorico(true)">
                         <button onclick="carregarHistorico(true)" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded ml-2" title="Atualizar Gráfico"><i class="fas fa-sync"></i></button>
                     </div>
                 </div>
                 
-                <!-- Gráfico -->
                 <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-indigo-600 mb-6">
-                    <h3 class="text-lg font-bold text-gray-700 mb-4 text-center">Evolução de Despesas vs Repasses (Jan - Dez)</h3>
-                    <div class="w-full h-72 relative">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4 text-center">Evolução: Despesas vs Receitas (Jan - Dez)</h3>
+                    <div class="w-full h-80 relative">
                         <canvas id="historicalChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Tabela de Detalhamento Financeiro -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                    <div class="bg-gray-100 p-4 border-b border-gray-200">
-                        <h3 class="font-bold text-gray-800">Detalhamento do Resultado Financeiro</h3>
-                        <p class="text-xs text-gray-500 mt-1">Cálculo: (Folha Bruta + 13º + Assessorias + Despesas) - Repasse</p>
+                    <div class="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800">Detalhamento Mensal</h3>
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">Regime de Caixa</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold">
+                            <thead class="bg-indigo-50 text-indigo-900 uppercase text-xs font-bold">
                                 <tr>
                                     <th class="px-4 py-3">Mês</th>
-                                    <th class="px-4 py-3 text-right text-blue-700">Folha Bruta (+13º)</th>
-                                    <th class="px-4 py-3 text-right text-orange-600">Adm/Desp.</th>
-                                    <th class="px-4 py-3 text-right bg-gray-100 font-bold">Total Despesas</th>
-                                    <th class="px-4 py-3 text-right text-green-700">Repasse (Guias)</th>
-                                    <th class="px-4 py-3 text-right font-extrabold">Resultado</th>
+                                    <th class="px-4 py-3 text-right">Folha Bruta</th>
+                                    <th class="px-4 py-3 text-right">Adm/Desp.</th>
+                                    <th class="px-4 py-3 text-right bg-indigo-100">Total Despesas</th>
+                                    <th class="px-4 py-3 text-right text-green-700">Receita (Guias)</th>
+                                    <th class="px-4 py-3 text-right">Resultado</th>
                                 </tr>
                             </thead>
                             <tbody id="table-analise-body" class="divide-y divide-gray-100">
-                                <!-- Linhas geradas via JS -->
+                                <!-- Linhas JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: MARGEM CONSIGNÁVEL (NOVA) -->
-            <div id="view-margem" class="view-section hidden-section">
+            <!-- VIEW: MARGEM CONSIGNÁVEL -->
+            <div id="view-margem" class="view-section hidden-section animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-teal-800"><i class="fas fa-calculator mr-2"></i>Calculadora de Margem</h2>
-                    <p class="text-sm text-gray-500">Simule a margem disponível para servidores</p>
+                    <div>
+                        <h2 class="text-2xl font-bold text-teal-800"><i class="fas fa-calculator mr-2"></i>Calculadora de Margem</h2>
+                        <p class="text-sm text-gray-500">Simule a margem disponível para servidores (Lei Vigente)</p>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
                     <!-- Calculadora -->
                     <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-teal-500">
                         <form onsubmit="handleSubmit(event)" oninput="calcularMargemVisual(this)">
                             <input type="hidden" name="action_type" value="adicionarCalculoMargem">
                             <input type="hidden" name="sheetKey" value="MARGEM">
                             
-                            <!-- Campos Escondidos para Envio -->
                             <input type="hidden" name="liquido">
                             <input type="hidden" name="margemPermitida">
                             <input type="hidden" name="disponivel">
 
                             <div class="mb-4">
-                                <label class="block text-xs font-bold text-gray-500 mb-1">Nome do Servidor</label>
-                                <input name="nome" class="w-full p-2 border rounded" placeholder="Ex: João da Silva" required>
+                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nome do Servidor</label>
+                                <input name="nome" class="w-full p-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="Ex: João da Silva" required>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">Renda Bruta</label>
-                                    <input name="bruto" class="money-mask w-full p-2 border rounded bg-blue-50 border-blue-200 text-blue-800 font-bold" placeholder="R$ 0,00" required>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">CPF</label>
+                                    <input name="cpf" class="w-full p-2 border rounded" placeholder="000.000.000-00">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">Desc. Obrigatórios</label>
-                                    <input name="descontos" class="money-mask w-full p-2 border rounded bg-red-50 border-red-200 text-red-800 font-bold" placeholder="R$ 0,00" required>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Matrícula</label>
+                                    <input name="matricula" class="w-full p-2 border rounded">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">% Margem</label>
+                                    <input name="porcentagem" type="number" class="w-full p-2 border rounded text-center bg-teal-50 font-bold text-teal-800" value="35" min="1" max="100">
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">% Margem</label>
-                                    <input name="porcentagem" type="number" class="w-full p-2 border rounded text-center" value="35" min="1" max="100">
+                                <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                                    <label class="block text-xs font-bold text-blue-700 mb-1 uppercase">Renda Bruta</label>
+                                    <input name="bruto" class="money-mask w-full p-2 border border-blue-200 rounded text-right font-bold text-gray-700" placeholder="R$ 0,00" required>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">Parcelas Já Contratadas</label>
-                                    <input name="usoAtual" class="money-mask w-full p-2 border rounded" placeholder="R$ 0,00">
+                                <div class="bg-red-50 p-3 rounded border border-red-100">
+                                    <label class="block text-xs font-bold text-red-700 mb-1 uppercase">Desc. Obrigatórios</label>
+                                    <input name="descontos" class="money-mask w-full p-2 border border-red-200 rounded text-right font-bold text-gray-700" placeholder="R$ 0,00" required>
+                                    <p class="text-[10px] text-red-400 mt-1">IR, Previdência, Pensão</p>
                                 </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Parcelas Já Contratadas (Empréstimos Ativos)</label>
+                                <input name="usoAtual" class="money-mask w-full p-2.5 border rounded text-right font-medium" placeholder="R$ 0,00">
                             </div>
 
                             <!-- Resultados Visuais -->
-                            <div class="bg-gray-50 p-4 rounded-lg space-y-2 mb-6">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Renda Líquida:</span>
-                                    <span class="font-bold text-gray-800" id="display-calc-liquido">R$ 0,00</span>
+                            <div class="bg-gray-800 text-white p-5 rounded-lg space-y-3 mb-6 relative overflow-hidden">
+                                <div class="absolute -right-4 -top-4 text-gray-700 opacity-20"><i class="fas fa-calculator text-9xl"></i></div>
+                                <div class="flex justify-between text-sm relative z-10">
+                                    <span class="text-gray-300">Renda Líquida:</span>
+                                    <span class="font-bold" id="display-calc-liquido">R$ 0,00</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Margem Permitida (35%):</span>
-                                    <span class="font-bold text-blue-600" id="display-calc-permitida">R$ 0,00</span>
+                                <div class="flex justify-between text-sm relative z-10">
+                                    <span class="text-gray-300">Margem Permitida (Teto):</span>
+                                    <span class="font-bold text-blue-300" id="display-calc-permitida">R$ 0,00</span>
                                 </div>
-                                <div class="border-t border-gray-200 my-2"></div>
-                                <div class="flex justify-between text-lg">
-                                    <span class="font-bold text-teal-800">Margem Disponível:</span>
-                                    <span class="font-bold text-teal-600" id="display-calc-disponivel">R$ 0,00</span>
+                                <div class="border-t border-gray-600 my-2 relative z-10"></div>
+                                <div class="flex justify-between text-xl relative z-10">
+                                    <span class="font-bold text-teal-400">Margem Disponível:</span>
+                                    <span class="font-bold text-teal-400" id="display-calc-disponivel">R$ 0,00</span>
                                 </div>
                             </div>
 
-                            <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded hover:bg-teal-700 shadow-lg transition">
-                                <i class="fas fa-save mr-2"></i> Salvar Simulação
+                            <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded hover:bg-teal-700 shadow-lg transition flex justify-center items-center gap-2">
+                                <i class="fas fa-save"></i> Salvar Simulação no Histórico
                             </button>
                         </form>
                     </div>
 
-                    <!-- Explicação -->
-                    <div class="bg-teal-50 p-6 rounded-xl border border-teal-100 h-fit">
-                        <h3 class="font-bold text-teal-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Como funciona o cálculo?</h3>
-                        <ul class="space-y-3 text-sm text-teal-900">
-                            <li><strong>1. Renda Líquida:</strong><br>Salário Bruto (-) Descontos Obrigatórios (INSS, IRRF, Pensão).</li>
-                            <li><strong>2. Margem Permitida:</strong><br>35% da Renda Líquida (ou a % que você definir).</li>
-                            <li><strong>3. Margem Disponível:</strong><br>Margem Permitida (-) Soma das parcelas de empréstimos que já estão descontando em folha.</li>
-                        </ul>
+                    <!-- Tabela de Histórico -->
+                    <div class="flex flex-col h-full">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col">
+                            <div class="bg-gray-50 p-4 border-b border-gray-200 font-bold text-gray-700 flex justify-between">
+                                <span>Histórico (Mês Atual)</span>
+                                <span class="text-xs font-normal text-gray-500 bg-white border px-2 py-1 rounded">Últimos cálculos</span>
+                            </div>
+                            <div class="flex-1 overflow-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs sticky top-0 shadow-sm">
+                                        <tr>
+                                            <th class="px-4 py-3">Servidor</th>
+                                            <th class="px-4 py-3 text-right">Líquido</th>
+                                            <th class="px-4 py-3 text-right">Margem</th>
+                                            <th class="px-4 py-3 text-right text-teal-600 font-bold">Livre</th>
+                                            <th class="px-4 py-3 text-center">Apagar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-margem" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                                <div id="empty-margem" class="p-8 text-center text-gray-500 hidden flex flex-col items-center justify-center h-40">
+                                    <i class="fas fa-history text-3xl text-gray-300 mb-2"></i>
+                                    <p>Nenhuma simulação salva.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Tabela de Histórico -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-gray-700">Histórico de Simulações (Mês Atual)</div>
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Servidor</th>
-                                <th class="px-6 py-3 text-right">Líquido</th>
-                                <th class="px-6 py-3 text-right">Margem Total</th>
-                                <th class="px-6 py-3 text-right text-red-500">Em Uso</th>
-                                <th class="px-6 py-3 text-right text-teal-600 font-bold">Disponível</th>
-                                <th class="px-6 py-3 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-margem" class="divide-y divide-gray-100"></tbody>
-                    </table>
-                    <div id="empty-margem" class="p-8 text-center text-gray-500 hidden">Nenhuma simulação salva neste mês.</div>
                 </div>
             </div>
 
-            <!-- VIEW: CONFERÊNCIA PAGAMENTOS (ATUALIZADO) -->
-            <div id="view-conferencia" class="view-section hidden-section">
+            <!-- VIEW: CONFERÊNCIA PAGAMENTOS -->
+            <div id="view-conferencia" class="view-section hidden-section animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-green-800"><i class="fas fa-check-double mr-2"></i>Conferência de Pagamentos</h2>
-                    <button onclick="carregarConferencia(true)" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
+                    <button onclick="carregarConferencia(true)" class="text-sm bg-white border border-gray-200 px-3 py-1 rounded text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
-                <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 text-sm text-green-800">
-                    <i class="fas fa-info-circle mr-2"></i> Marque o que já foi pago. Itens não pagos deste mês aparecerão automaticamente no próximo.
+                <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-6 text-sm text-green-800 flex items-start gap-2">
+                    <i class="fas fa-info-circle mt-0.5"></i> 
+                    <div>
+                        <p class="font-bold">Como funciona:</p>
+                        <p>Marque o "switch" ao confirmar o pagamento no banco. Itens não marcados continuarão aparecendo como pendência nos meses seguintes.</p>
+                    </div>
                 </div>
                 <div id="conferencia-container" class="space-y-6"></div>
-                <div id="empty-conferencia" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhum lançamento neste mês.</div>
+                <div id="empty-conferencia" class="p-12 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm border border-gray-100">
+                    <i class="fas fa-check-circle text-4xl text-gray-300 mb-2"></i>
+                    <p>Tudo conferido ou nenhum lançamento para este mês.</p>
+                </div>
             </div>
 
             <!-- VIEW: PENDÊNCIAS ORGANIZADA -->
-            <div id="view-pendencias" class="view-section hidden-section">
+            <div id="view-pendencias" class="view-section hidden-section animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>Pendências em Aberto</h2>
                     <button onclick="carregarPendencias(true)" class="text-sm text-gray-600 hover:text-gray-900"><i class="fas fa-sync mr-1"></i>Atualizar</button>
@@ -419,189 +451,162 @@
                 <div id="pendencias-container" class="space-y-6">
                     <!-- JS vai inserir os grupos aqui -->
                 </div>
-                <div id="empty-pendencias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma pendência encontrada! 🎉</div>
+                <div id="empty-pendencias" class="p-12 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm border border-green-100">
+                    <i class="fas fa-glass-cheers text-4xl text-green-300 mb-2"></i>
+                    <p class="text-lg text-green-600 font-bold">Parabéns!</p>
+                    <p>Nenhuma pendência encontrada no sistema.</p>
+                </div>
             </div>
 
             <!-- VIEW: RECOLHIMENTO GUIAS -->
-            <div id="view-guias" class="view-section hidden-section">
+            <div id="view-guias" class="view-section hidden-section animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-purple-800"><i class="fas fa-landmark mr-2"></i>Recolhimento de Guias</h2>
-                        <p class="text-xs text-gray-500">Controle de repasses da Prefeitura</p>
+                        <p class="text-xs text-gray-500">Controle de repasses e obrigações patronais</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="abrirModal('modal-config-guia', 'adicionarTipoGuia')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm"><i class="fas fa-cog"></i> Configurar Tipos</button>
-                        <button onclick="carregarTiposParaSelect(); abrirModal('modal-guia', 'adicionarGuiaObrigacao')" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"><i class="fas fa-plus"></i> Nova Guia</button>
+                        <button onclick="abrirModal('modal-config-guia', 'adicionarTipoGuia')" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50"><i class="fas fa-cog"></i> Tipos</button>
+                        <button onclick="carregarTiposParaSelect(); abrirModal('modal-guia', 'adicionarGuiaObrigacao')" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 flex items-center gap-2"><i class="fas fa-plus"></i> Lançar Guia</button>
                     </div>
                 </div>
                 
-                <div id="container-guias" class="space-y-6">
+                <div id="container-guias" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Cards de Guias serão inseridos aqui via JS -->
                 </div>
-                <div id="empty-guias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma guia lançada nesta competência.</div>
+                <div id="empty-guias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm col-span-2">Nenhuma guia lançada nesta competência.</div>
             </div>
 
-            <!-- VIEW: IMPOSTO DE RENDA (PADRONIZADO) -->
-            <div id="view-imposto" class="view-section hidden-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-blue-900">Imposto de Renda (Retido)</h2>
-                    <button onclick="abrirModal('modal-imposto', 'adicionarImpostoRenda')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Lançar IR</button>
+            <!-- DEMAIS VIEWS (CADASTROS - TABELAS PADRÃO) -->
+            <!-- IMPRIMI APENAS UM EXEMPLO DE ESTRUTURA PARA NÃO ESTOURAR O LIMITE, OS OUTROS SEGUEM O PADRÃO JS -->
+            <div id="view-folha" class="view-section hidden-section animate-fade-in">
+                <div class="flex justify-between mb-4 items-center">
+                    <h2 class="text-2xl font-bold text-blue-900">Folha Pagamento</h2>
+                    <button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow flex items-center gap-2"><i class="fas fa-plus"></i> Adicionar</button>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-blue-100">
+                <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Origem</th>
-                                <th class="px-6 py-3">Descrição</th>
-                                <th class="px-6 py-3 text-right">Valor</th>
-                                <th class="px-6 py-3">Obs</th>
-                                <th class="px-6 py-3 text-center">Ações</th>
-                            </tr>
+                        <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold">
+                            <tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr>
                         </thead>
-                        <tbody id="lista-imposto" class="divide-y divide-blue-50"></tbody>
-                        <tfoot id="foot-imposto" class="bg-gray-100 font-bold text-gray-700 hidden">
-                            <tr>
-                                <td colspan="2" class="px-6 py-3 text-right">TOTAL:</td>
-                                <td class="px-6 py-3 text-right" id="total-imposto-val"></td>
-                                <td colspan="2"></td>
-                            </tr>
+                        <tbody id="lista-folha" class="divide-y divide-gray-100"></tbody>
+                        <tfoot id="foot-folha" class="bg-gray-50 font-bold text-gray-700 hidden">
+                            <tr><td class="px-4 py-3 text-right">TOTAL:</td><td class="px-4 py-3 text-right" id="total-folha-bruto"></td><td class="px-4 py-3 text-right text-red-500" id="total-folha-desc"></td><td class="px-4 py-3 text-right text-blue-700" id="total-folha-liq"></td><td colspan="2"></td></tr>
                         </tfoot>
                     </table>
-                    <div id="empty-imposto" class="p-8 text-center text-gray-500 hidden">Nenhum lançamento.</div>
-                </div>
-            </div>
-
-            <!-- DEMAIS VIEWS (CADASTROS - PADRONIZADOS E COM BRUTO/LIQUIDO) -->
-            <div id="view-folha" class="view-section hidden-section">
-                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Folha Pagamento</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
-                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
-                            <tr>
-                                <th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-folha" class="divide-y divide-blue-50"></tbody>
-                        <tfoot id="foot-folha" class="bg-gray-100 font-bold text-gray-700 hidden">
-                            <tr>
-                                <td class="px-4 py-3 text-right">TOTAL:</td>
-                                <td class="px-4 py-3 text-right" id="total-folha-bruto"></td>
-                                <td class="px-4 py-3 text-right text-red-500" id="total-folha-desc"></td>
-                                <td class="px-4 py-3 text-right text-blue-700" id="total-folha-liq"></td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div id="empty-folha" class="p-4 text-center hidden">Vazio</div>
+                    <div id="empty-folha" class="p-8 text-center text-gray-400 hidden">Nenhum registro encontrado.</div>
                 </div>
             </div>
             
-            <div id="view-decimo" class="view-section hidden-section">
-                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
-                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
-                </div>
+            <!-- Outros Views são renderizados dinamicamente pelo JS, estrutura HTML vazia necessária -->
+            <div id="view-decimo" class="view-section hidden-section animate-fade-in">
+                <div class="flex justify-between mb-4 items-center"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><i class="fas fa-plus mr-1"></i> Adicionar</button></div>
+                <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo" class="divide-y divide-gray-100"></tbody><tfoot id="foot-decimo" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td class="px-4 py-3 text-right">TOTAL:</td><td class="px-4 py-3 text-right" id="total-decimo-bruto"></td><td class="px-4 py-3 text-right text-red-500" id="total-decimo-desc"></td><td class="px-4 py-3 text-right text-blue-700" id="total-decimo-liq"></td><td colspan="2"></td></tr></tfoot></table><div id="empty-decimo" class="p-8 text-center text-gray-400 hidden">Nenhum registro.</div></div>
             </div>
             
-            <div id="view-outros" class="view-section hidden-section">
-                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">PGMT Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div>
-                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
-                        <tbody id="lista-outros" class="divide-y divide-blue-50"></tbody>
-                        <tfoot id="foot-outros" class="bg-gray-100 font-bold text-gray-700 hidden">
-                            <tr>
-                                <td colspan="3" class="px-6 py-3 text-right">TOTAL:</td>
-                                <td class="px-6 py-3 text-right" id="total-outros-val"></td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div id="empty-outros" class="p-4 text-center hidden">Vazio</div>
-                </div>
+            <div id="view-outros" class="view-section hidden-section animate-fade-in">
+                <div class="flex justify-between mb-4 items-center"><h2 class="text-2xl font-bold text-blue-900">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50">Copiar Mês Ant.</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><i class="fas fa-plus"></i></button></div></div>
+                <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros" class="divide-y divide-gray-100"></tbody><tfoot id="foot-outros" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td colspan="3" class="px-6 py-3 text-right">TOTAL:</td><td class="px-6 py-3 text-right" id="total-outros-val"></td><td colspan="2"></td></tr></tfoot></table><div id="empty-outros" class="p-8 text-center text-gray-400 hidden">Vazio</div></div>
             </div>
             
-            <div id="view-consignados" class="view-section hidden-section">
-                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
-                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
-                        <tbody id="lista-consignados" class="divide-y divide-blue-50"></tbody>
-                        <tfoot id="foot-consignados" class="bg-gray-100 font-bold text-gray-700 hidden">
-                            <tr>
-                                <td class="px-6 py-3 text-right">TOTAL:</td>
-                                <td class="px-6 py-3 text-right" id="total-consignados-val"></td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div id="empty-consignados" class="p-4 text-center hidden">Vazio</div>
-                </div>
+            <div id="view-consignados" class="view-section hidden-section animate-fade-in">
+                <div class="flex justify-between mb-4 items-center"><h2 class="text-2xl font-bold text-blue-900">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><i class="fas fa-plus"></i></button></div>
+                <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-consignados" class="divide-y divide-gray-100"></tbody><tfoot id="foot-consignados" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td class="px-6 py-3 text-right">TOTAL:</td><td class="px-6 py-3 text-right" id="total-consignados-val"></td><td colspan="2"></td></tr></tfoot></table><div id="empty-consignados" class="p-8 text-center text-gray-400 hidden">Vazio</div></div>
             </div>
             
-            <div id="view-adm" class="view-section hidden-section">
+            <div id="view-adm" class="view-section hidden-section animate-fade-in">
                 <div class="mb-8">
-                    <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-blue-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div>
-                    <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3">NF</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
-                            <tbody id="lista-recorrentes" class="divide-y divide-blue-50"></tbody>
-                            <tfoot id="foot-recorrentes" class="bg-gray-100 font-bold text-gray-700 hidden">
-                                <tr>
-                                    <td class="px-6 py-3 text-right" colspan="2">TOTAL:</td>
-                                    <td class="px-6 py-3 text-right" id="total-recorrentes-val"></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                        <div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div>
-                    </div>
+                    <div class="flex justify-between mb-4 items-center"><h3 class="text-xl font-bold text-blue-900">Assessorias</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50">Copiar Mês Ant.</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-blue-600 text-white px-3 py-1.5 rounded shadow"><i class="fas fa-plus"></i></button></div></div>
+                    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3">NF</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes" class="divide-y divide-gray-100"></tbody><tfoot id="foot-recorrentes" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td class="px-6 py-3 text-right" colspan="2">TOTAL:</td><td class="px-6 py-3 text-right" id="total-recorrentes-val"></td><td></td></tr></tfoot></table><div id="empty-recorrentes" class="p-8 text-center text-gray-400 hidden">Vazio</div></div>
                 </div>
                 <div>
-                    <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div>
-                    <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead>
-                            <tbody id="lista-eventuais" class="divide-y divide-blue-50"></tbody>
-                            <tfoot id="foot-eventuais" class="bg-gray-100 font-bold text-gray-700 hidden">
-                                <tr>
-                                    <td class="px-6 py-3 text-right">TOTAL:</td>
-                                    <td class="px-6 py-3 text-right" id="total-eventuais-val"></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                        <div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div>
-                    </div>
+                    <div class="flex justify-between mb-4 items-center"><h3 class="text-xl font-bold text-blue-900">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded shadow"><i class="fas fa-plus"></i></button></div>
+                    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais" class="divide-y divide-gray-100"></tbody><tfoot id="foot-eventuais" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td class="px-6 py-3 text-right">TOTAL:</td><td class="px-6 py-3 text-right" id="total-eventuais-val"></td><td></td></tr></tfoot></table><div id="empty-eventuais" class="p-8 text-center text-gray-400 hidden">Vazio</div></div>
                 </div>
+            </div>
+
+            <div id="view-imposto" class="view-section hidden-section animate-fade-in">
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-blue-900">Imposto de Renda</h2><button onclick="abrirModal('modal-imposto', 'adicionarImpostoRenda')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow"><i class="fas fa-plus mr-2"></i>Lançar</button></div>
+                <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold"><tr><th class="px-6 py-3">Origem</th><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-imposto" class="divide-y divide-gray-100"></tbody><tfoot id="foot-imposto" class="bg-gray-50 font-bold text-gray-700 hidden"><tr><td colspan="2" class="px-6 py-3 text-right">TOTAL:</td><td class="px-6 py-3 text-right" id="total-imposto-val"></td><td colspan="2"></td></tr></tfoot></table><div id="empty-imposto" class="p-8 text-center text-gray-400 hidden">Vazio</div></div>
             </div>
         </div>
     </main>
 
-    <!-- MODAIS COM BOTÃO DE FECHAR -->
-    <div id="modal-novo-usuario" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative"><button onclick="toggleModal('modal-novo-usuario')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Novo Usuário</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="action_type" value="adicionarUsuario"><div class="mb-4"><label class="text-xs text-gray-500 font-bold">Usuário</label><input name="novoUsuario" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs text-gray-500 font-bold">Senha</label><input type="password" name="novaSenha" class="w-full border p-2 rounded" required></div><div class="flex justify-end"><button type="submit" class="bg-blue-800 text-white px-4 py-2 rounded">Criar</button></div></form></div></div>
+    <!-- MODAIS -->
+    <!-- OVERLAY PADRÃO PARA MODAIS -->
+    <div id="modal-overlay-bg" class="hidden fixed inset-0 bg-black/50 z-40 transition-opacity"></div>
 
-    <div id="modal-config-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative"><button onclick="toggleModal('modal-config-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Novo Tipo</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarTipoGuia"><input type="hidden" name="sheetKey" value="CONFIG_GUIAS"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Nome da Guia</label><input name="nome" class="w-full border p-2 rounded uppercase" required></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button></div></form></div></div>
+    <!-- USUÁRIO -->
+    <div id="modal-novo-usuario" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative animate-scale-in">
+            <button onclick="toggleModal('modal-novo-usuario')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-lg mb-4 text-gray-800">Novo Usuário</h3>
+            <form onsubmit="handleSubmit(event)">
+                <input type="hidden" name="action_type" value="adicionarUsuario">
+                <div class="mb-4"><label class="text-xs text-gray-500 font-bold uppercase">Usuário</label><input name="novoUsuario" class="w-full border p-2 rounded focus:border-blue-500 outline-none" required></div>
+                <div class="mb-6"><label class="text-xs text-gray-500 font-bold uppercase">Senha</label><input type="password" name="novaSenha" class="w-full border p-2 rounded focus:border-blue-500 outline-none" required></div>
+                <div class="flex justify-end"><button type="submit" class="bg-blue-800 text-white px-6 py-2 rounded shadow hover:bg-blue-900 font-bold text-sm">Criar</button></div>
+            </form>
+        </div>
+    </div>
 
-    <div id="modal-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-purple-600 relative"><button onclick="toggleModal('modal-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-purple-800">Lançar Guia</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarGuiaObrigacao"><input type="hidden" name="sheetKey" value="GUIAS"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" id="select-tipo-guia" class="w-full border p-2 rounded" required></select></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label class="text-xs font-bold text-gray-500">Principal</label><input name="valorPrincipal" class="money-mask w-full border p-2 rounded"></div><div><label class="text-xs font-bold text-gray-500">Décimo</label><input name="valorDecimo" class="money-mask w-full border p-2 rounded"></div></div><div id="extra-fields-guia" class="hidden grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-2 rounded"><div><label class="text-xs font-bold text-gray-500">Segurado</label><input name="valorSegurado" class="money-mask w-full border p-2 rounded"></div><div><label class="text-xs font-bold text-gray-500">Patronal</label><input name="valorPatronal" class="money-mask w-full border p-2 rounded"></div></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button></div></form></div></div>
-    
-    <div id="modal-pagamento-guia" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative"><button onclick="toggleModal('modal-pagamento-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-green-700">Baixar</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="action_type" value="adicionarPagamentoGuia"><input type="hidden" name="idGuia" id="input-id-guia-ref"><input type="hidden" name="id"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Data</label><input type="date" name="dataPagto" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valorPago" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded" placeholder="Comprovante"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Baixar</button></div></form></div></div>
+    <!-- GUIA -->
+    <div id="modal-guia" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-purple-600 relative animate-scale-in">
+            <button onclick="toggleModal('modal-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-lg mb-4 text-purple-800">Lançar Guia</h3>
+            <form onsubmit="handleSubmit(event)">
+                <input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarGuiaObrigacao"><input type="hidden" name="sheetKey" value="GUIAS">
+                <div class="mb-4"><label class="text-xs font-bold text-gray-500">Tipo</label><select name="tipo" id="select-tipo-guia" class="w-full border p-2 rounded bg-gray-50" required></select></div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div><label class="text-xs font-bold text-gray-500">Principal</label><input name="valorPrincipal" class="money-mask w-full border p-2 rounded text-right"></div>
+                    <div><label class="text-xs font-bold text-gray-500">Décimo</label><input name="valorDecimo" class="money-mask w-full border p-2 rounded text-right"></div>
+                </div>
+                <div id="extra-fields-guia" class="hidden grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-2 rounded border border-gray-100">
+                    <div><label class="text-xs font-bold text-gray-500">Segurado</label><input name="valorSegurado" class="money-mask w-full border p-2 rounded text-right bg-white"></div>
+                    <div><label class="text-xs font-bold text-gray-500">Patronal</label><input name="valorPatronal" class="money-mask w-full border p-2 rounded text-right bg-white"></div>
+                </div>
+                <div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div>
+                <div class="flex justify-end"><button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded font-bold hover:bg-purple-700 shadow">Salvar</button></div>
+            </form>
+        </div>
+    </div>
 
-    <!-- Modais Padrão (Com Botão X) -->
-    <div id="modal-imposto" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-imposto')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Lançar IR</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarImpostoRenda"><input type="hidden" name="sheetKey" value="IMPOSTO"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Origem</label><select name="tipo" class="w-full border p-2 rounded"><option>Folha Pagamento</option><option>Nota Fiscal</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded"></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
+    <!-- FOLHA -->
+    <div id="modal-folha" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative animate-scale-in">
+            <button onclick="toggleModal('modal-folha')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-lg mb-4 text-blue-800">Folha Pagamento</h3>
+            <form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)">
+                <input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA">
+                <select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select>
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Proventos (Bruto)</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200 text-right font-bold text-blue-900" placeholder="R$ 0,00" required></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200 text-right font-bold text-red-700" placeholder="R$ 0,00" required></div>
+                </div>
+                <div class="mb-3 p-3 bg-blue-50 rounded border border-blue-100 text-center text-sm font-bold text-blue-800 shadow-inner" id="display-liquido-folha">Líquido: R$ 0,00</div>
+                <input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações (Opcional)">
+                <div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 shadow font-bold">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- OUTROS MODAIS SIMPLIFICADOS (Estrutura idêntica) -->
+    <div id="modal-decimo" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600 relative"><button onclick="toggleModal('modal-decimo')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">13º Salário</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Bruto</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-decimo">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded font-bold shadow">Salvar</button></div></form></div></div>
     
-    <!-- MODAL FOLHA (ATUALIZADO: BRUTO E DESCONTOS) -->
-    <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-folha')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">Folha Pagamento</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Proventos (Bruto)</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-folha">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
+    <div id="modal-config-guia" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative"><button onclick="toggleModal('modal-config-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Novo Tipo Guia</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarTipoGuia"><input type="hidden" name="sheetKey" value="CONFIG_GUIAS"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Nome</label><input name="nome" class="w-full border p-2 rounded uppercase" required></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">Salvar</button></div></form></div></div>
     
-    <!-- MODAL 13º (ATUALIZADO: BRUTO E DESCONTOS) -->
-    <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600 relative"><button onclick="toggleModal('modal-decimo')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">13º Salário</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Proventos (Bruto)</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-decimo">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
+    <div id="modal-pagamento-guia" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative"><button onclick="toggleModal('modal-pagamento-guia')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-green-700">Baixar Guia</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="action_type" value="adicionarPagamentoGuia"><input type="hidden" name="idGuia" id="input-id-guia-ref"><input type="hidden" name="id"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Data</label><input type="date" name="dataPagto" class="w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valorPago" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded" placeholder="Comprovante"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Baixar</button></div></form></div></div>
+
+    <div id="modal-imposto" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-imposto')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Lançar IR</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarImpostoRenda"><input type="hidden" name="sheetKey" value="IMPOSTO"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Origem</label><select name="tipo" class="w-full border p-2 rounded"><option>Folha Pagamento</option><option>Nota Fiscal</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded"></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
     
-    <div id="modal-outros" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-outros')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Outros</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutrosBancos"><input type="hidden" name="sheetKey" value="OUTROS_BANCOS"><input name="nome" class="w-full border p-2 mb-2" placeholder="Nome"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select><input name="banco" class="w-full border p-2 mb-2" placeholder="Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <div id="modal-outros" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-outros')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Outros Bancos</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutrosBancos"><input type="hidden" name="sheetKey" value="OUTROS_BANCOS"><input name="nome" class="w-full border p-2 mb-2 rounded" placeholder="Nome"><select name="tipo" class="w-full border p-2 mb-2 rounded"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select><input name="banco" class="w-full border p-2 mb-2 rounded" placeholder="Banco"><input name="valor" class="money-mask w-full border p-2 mb-2 rounded" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2 rounded" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
-    <div id="modal-consignados" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-consignados')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Consignado</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarConsignado"><input type="hidden" name="sheetKey" value="CONSIGNADOS"><input name="tipo" class="w-full border p-2 mb-2" placeholder="Tipo/Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <div id="modal-consignados" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-consignados')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Consignado</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarConsignado"><input type="hidden" name="sheetKey" value="CONSIGNADOS"><input name="tipo" class="w-full border p-2 mb-2 rounded" placeholder="Tipo/Banco"><input name="valor" class="money-mask w-full border p-2 mb-2 rounded" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2 rounded" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
-    <!-- MODAL ASSESSORIAS ATUALIZADO (CAMPO NF) -->
-    <div id="modal-recorrentes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-recorrentes')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Assessoria</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarRecorrente"><input type="hidden" name="sheetKey" value="RECORRENTES"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><select name="tipo" class="w-full border p-2 mb-2"><option>Assessoria</option><option>Serviço</option></select><input name="notaFiscal" class="w-full border p-2 mb-2" placeholder="Nota Fiscal (Nº)"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <div id="modal-recorrentes" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-recorrentes')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Assessoria</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarRecorrente"><input type="hidden" name="sheetKey" value="RECORRENTES"><input name="descricao" class="w-full border p-2 mb-2 rounded" placeholder="Descrição"><select name="tipo" class="w-full border p-2 mb-2 rounded"><option>Assessoria</option><option>Serviço</option></select><input name="notaFiscal" class="w-full border p-2 mb-2 rounded" placeholder="Nota Fiscal (Nº)"><input name="valor" class="money-mask w-full border p-2 mb-2 rounded" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2 rounded" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
-    <div id="modal-eventuais" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-eventuais')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Eventual</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutroPagamento"><input type="hidden" name="sheetKey" value="OUTROS_PGTOS"><input name="descricao" class="w-full border p-2 mb-2" placeholder="Descrição"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <div id="modal-eventuais" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-eventuais')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Eventual</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutroPagamento"><input type="hidden" name="sheetKey" value="OUTROS_PGTOS"><input name="descricao" class="w-full border p-2 mb-2 rounded" placeholder="Descrição"><input name="valor" class="money-mask w-full border p-2 mb-2 rounded" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2 rounded" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
 
     <!-- Injeção do Arquivo de Scripts (JS) -->
     <?!= include('JavaScript'); ?>
