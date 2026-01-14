@@ -16,6 +16,12 @@
     input[type="month"] { position: relative; }
     input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(1); }
 
+    /* Barra de Rolagem Personalizada (Custom Scrollbar) */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+
     /* --- COMPONENTES VISUAIS --- */
 
     /* Loading Overlay */
@@ -131,7 +137,7 @@
         }
 
         /* Esconde TUDO que não é o documento */
-        aside, #loadingOverlay, #toast, #login-screen, .no-print, header, nav, #btn-imprimir-flutuante { 
+        aside, #loadingOverlay, #toast, #login-screen, .no-print, header, nav, #btn-imprimir-flutuante, #sistema-wrapper { 
             display: none !important; 
         }
 
