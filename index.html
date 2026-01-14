@@ -11,6 +11,9 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Chart.js (Gráficos) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
@@ -84,7 +87,7 @@
                 <button type="submit" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 transition duration-200">ENTRAR</button>
             </form>
             <div id="login-msg" class="mt-4 text-center text-red-600 text-xs font-bold hidden border border-red-200 bg-red-50 p-2 rounded"></div>
-            <p class="text-xs text-center text-gray-400 mt-4">V1.17 - Conexão Otimizada</p>
+            <p class="text-xs text-center text-gray-400 mt-4">V1.33 - Correção de Referência</p>
         </div>
     </div>
 
@@ -122,7 +125,7 @@
                 <button onclick="logout()" class="text-xs text-blue-200 hover:text-white" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
             </div>
             <div class="flex justify-between items-center mb-4">
-                <p class="text-xs text-blue-200" id="user-display">...</p>
+                <p class="text-xs text-blue-200 truncate" id="user-display">...</p>
                 <button onclick="abrirModal('modal-novo-usuario', 'adicionarUsuario')" class="text-xs text-blue-300 hover:text-white" title="Novo Usuário"><i class="fas fa-user-plus"></i></button>
             </div>
             <label class="block text-xs font-bold text-blue-200 uppercase mb-1">Competência (Mês/Ano)</label>
@@ -136,6 +139,9 @@
         <nav class="flex-1 overflow-y-auto py-4">
             <button onclick="showView('resumo')" id="btn-resumo" class="nav-btn w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors flex items-center tab-active">
                 <i class="fas fa-chart-pie w-6"></i> Resumo
+            </button>
+            <button onclick="showView('graficos')" id="btn-graficos" class="nav-btn w-full text-left px-6 py-3 hover:bg-indigo-50 text-indigo-800 font-bold transition-colors flex items-center">
+                <i class="fas fa-chart-bar w-6"></i> Análise Gráfica
             </button>
             <button onclick="showView('conferencia')" id="btn-conferencia" class="nav-btn w-full text-left px-6 py-3 hover:bg-green-50 text-green-800 font-bold transition-colors flex items-center">
                 <i class="fas fa-check-double w-6"></i> Conferência Pagtos
@@ -194,29 +200,36 @@
                     <button onclick="carregarResumo(true)" class="text-sm text-blue-600 hover:underline"><i class="fas fa-sync mr-1"></i>Atualizar</button>
                 </div>
                 
-                <!-- GRID DE CARDS REORGANIZADO -->
+                <!-- GRID DE CARDS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     
-                    <!-- Folha Líquida (Destaque) -->
-                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-600 lg:col-span-2 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-users text-6xl text-blue-600"></i></div>
-                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Líquida (Total)</p>
-                        <h3 class="text-4xl font-bold text-gray-800 mt-2" id="dash-total-folha">R$ 0,00</h3>
-                        <div class="mt-4 flex items-center text-sm text-blue-600 bg-blue-50 w-fit px-3 py-1 rounded-full">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span id="dash-sub-folha">Normal + 13º</span>
+                    <!-- Folha Bruta (Total) - AZUL ESCURO -->
+                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-800 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-coins text-6xl text-blue-800"></i></div>
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Bruta (Total)</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bruto">R$ 0,00</h3>
+                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
+                            <i class="fas fa-plus mr-1"></i> Proventos Folha + 13º
                         </div>
                     </div>
 
-                    <!-- Bradesco Estimado -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
-                        <div class="flex justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase font-bold">Líquido Bradesco (Est.)</p>
-                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-bradesco">R$ 0,00</h3>
-                                <p class="text-[10px] text-gray-400 mt-1 font-semibold">(Folha Líquida - Outros Bancos)</p>
-                            </div>
-                            <div class="text-green-500"><i class="fas fa-money-check-alt text-2xl"></i></div>
+                    <!-- Folha Líquida - AZUL CLARO -->
+                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-filter text-6xl text-blue-500"></i></div>
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Folha Líquida</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-liquido">R$ 0,00</h3>
+                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
+                            <i class="fas fa-calculator mr-1"></i> Folha Bruta - Descontos
+                        </div>
+                    </div>
+
+                    <!-- Líquido Bradesco - VERDE -->
+                    <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 relative">
+                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fas fa-university text-6xl text-green-500"></i></div>
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wide">Líquido Bradesco (Est.)</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-2" id="dash-total-bradesco">R$ 0,00</h3>
+                        <div class="mt-2 text-xs text-gray-400 font-semibold bg-gray-50 p-1 rounded inline-block">
+                            <i class="fas fa-minus mr-1"></i> Folha Líquida - Outros Bancos
                         </div>
                     </div>
 
@@ -246,7 +259,7 @@
                         <h3 class="text-2xl font-bold text-gray-800 mt-1" id="dash-total-imposto">R$ 0,00</h3>
                     </div>
 
-                    <!-- Recolhimento Guias (NOVO) -->
+                    <!-- Recolhimento Guias -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-800">
                         <div class="flex justify-between items-start">
                             <div>
@@ -277,6 +290,51 @@
                                     <td class="px-4 py-3 font-bold">(=) Previsto Bradesco</td>
                                     <td class="px-4 py-3 text-right font-bold text-green-700" id="conf-bradesco">R$ 0,00</td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: GRÁFICOS E TABELA ANALÍTICA -->
+            <div id="view-graficos" class="view-section hidden-section">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-indigo-800"><i class="fas fa-chart-bar mr-2"></i>Análise Financeira</h2>
+                    <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm">
+                        <label class="text-sm font-bold text-gray-600">Ano:</label>
+                        <input type="number" id="chartYearInput" class="border border-gray-300 rounded px-2 py-1 w-20 text-center font-bold text-indigo-700" min="2020" max="2030" onchange="carregarHistorico(true)">
+                        <button onclick="carregarHistorico(true)" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded ml-2" title="Atualizar Gráfico"><i class="fas fa-sync"></i></button>
+                    </div>
+                </div>
+                
+                <!-- Gráfico -->
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-indigo-600 mb-6">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4 text-center">Evolução de Despesas vs Repasses (Jan - Dez)</h3>
+                    <div class="w-full h-72 relative">
+                        <canvas id="historicalChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabela de Detalhamento Financeiro -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200">
+                        <h3 class="font-bold text-gray-800">Detalhamento do Resultado Financeiro</h3>
+                        <p class="text-xs text-gray-500 mt-1">Cálculo: (Folha Bruta + 13º + Assessorias + Despesas) - Repasse</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold">
+                                <tr>
+                                    <th class="px-4 py-3">Mês</th>
+                                    <th class="px-4 py-3 text-right text-blue-700">Folha Bruta (+13º)</th>
+                                    <th class="px-4 py-3 text-right text-orange-600">Adm/Desp.</th>
+                                    <th class="px-4 py-3 text-right bg-gray-100 font-bold">Total Despesas</th>
+                                    <th class="px-4 py-3 text-right text-green-700">Repasse (Guias)</th>
+                                    <th class="px-4 py-3 text-right font-extrabold">Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-analise-body" class="divide-y divide-gray-100">
+                                <!-- Linhas geradas via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -328,15 +386,15 @@
                 <div id="empty-guias" class="p-8 text-center text-gray-500 hidden bg-white rounded-xl shadow-sm">Nenhuma guia lançada nesta competência.</div>
             </div>
 
-            <!-- VIEW: IMPOSTO DE RENDA -->
+            <!-- VIEW: IMPOSTO DE RENDA (PADRONIZADO) -->
             <div id="view-imposto" class="view-section hidden-section">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Imposto de Renda (Retido)</h2>
+                    <h2 class="text-2xl font-bold text-blue-900">Imposto de Renda (Retido)</h2>
                     <button onclick="abrirModal('modal-imposto', 'adicionarImpostoRenda')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm shadow"><i class="fas fa-plus mr-2"></i>Lançar IR</button>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-blue-100">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-600 text-white uppercase text-xs">
+                        <thead class="bg-blue-50 text-blue-700 uppercase text-xs">
                             <tr>
                                 <th class="px-6 py-3">Origem</th>
                                 <th class="px-6 py-3">Descrição</th>
@@ -345,18 +403,55 @@
                                 <th class="px-6 py-3 text-center">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="lista-imposto" class="divide-y divide-gray-100"></tbody>
+                        <tbody id="lista-imposto" class="divide-y divide-blue-50"></tbody>
                     </table>
                     <div id="empty-imposto" class="p-8 text-center text-gray-500 hidden">Nenhum lançamento.</div>
                 </div>
             </div>
 
-            <!-- DEMAIS VIEWS (CADASTROS) -->
-            <div id="view-folha" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Folha</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-folha"></tbody></table><div id="empty-folha" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-decimo" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-800">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden border border-blue-100"><table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-outros" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-consignados" class="view-section hidden-section"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-consignados"></tbody></table><div id="empty-consignados" class="p-4 text-center hidden">Vazio</div></div></div>
-            <div id="view-adm" class="view-section hidden-section"><div class="mb-8"><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-green-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes"></tbody></table><div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div></div></div><div><div class="flex justify-between mb-4"><h3 class="text-xl font-bold">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais"></tbody></table><div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div></div></div></div>
+            <!-- DEMAIS VIEWS (CADASTROS - PADRONIZADOS E COM BRUTO/LIQUIDO) -->
+            <div id="view-folha" class="view-section hidden-section">
+                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Folha Pagamento</h2><button onclick="abrirModal('modal-folha', 'adicionarFolha')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
+                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-folha" class="divide-y divide-blue-50"></tbody></table><div id="empty-folha" class="p-4 text-center hidden">Vazio</div>
+                </div>
+            </div>
+            
+            <div id="view-decimo" class="view-section hidden-section">
+                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">13º Salário</h2><button onclick="abrirModal('modal-decimo', 'adicionarDecimo')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
+                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-4 py-3">Tipo</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right text-red-500">Desc.</th><th class="px-4 py-3 text-right">Líquido</th><th class="px-4 py-3">Obs</th><th class="px-4 py-3 text-center">Ações</th></tr></thead><tbody id="lista-decimo" class="divide-y divide-blue-50"></tbody></table><div id="empty-decimo" class="p-4 text-center hidden">Vazio</div>
+                </div>
+            </div>
+            
+            <div id="view-outros" class="view-section hidden-section">
+                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Outros Bancos</h2><div class="flex gap-2"><button onclick="confirmarImportacao('OUTROS_BANCOS')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-outros', 'adicionarOutrosBancos')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div></div>
+                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Nome</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Banco</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-outros" class="divide-y divide-blue-50"></tbody></table><div id="empty-outros" class="p-4 text-center hidden">Vazio</div>
+                </div>
+            </div>
+            
+            <div id="view-consignados" class="view-section hidden-section">
+                <div class="flex justify-between mb-4"><h2 class="text-2xl font-bold text-blue-900">Consignados</h2><button onclick="abrirModal('modal-consignados', 'adicionarConsignado')" class="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button></div>
+                <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                    <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3">Obs</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-consignados" class="divide-y divide-blue-50"></tbody></table><div id="empty-consignados" class="p-4 text-center hidden">Vazio</div>
+                </div>
+            </div>
+            
+            <div id="view-adm" class="view-section hidden-section">
+                <div class="mb-8">
+                    <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Assessorias e Desp.</h3><div class="flex gap-2"><button onclick="confirmarImportacao('PAGAMENTOS_RECORRENTES')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">Copiar Anterior</button><button onclick="abrirModal('modal-recorrentes', 'adicionarRecorrente')" class="bg-blue-600 text-white px-3 py-1.5 rounded">Adicionar</button></div></div>
+                    <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                        <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-recorrentes" class="divide-y divide-blue-50"></tbody></table><div id="empty-recorrentes" class="p-4 text-center hidden">Vazio</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-4"><h3 class="text-xl font-bold text-blue-900">Outras Despesas</h3><button onclick="abrirModal('modal-eventuais', 'adicionarOutroPagamento')" class="bg-purple-600 text-white px-3 py-1.5 rounded">Adicionar</button></div>
+                    <div class="bg-white rounded shadow overflow-hidden border border-blue-100">
+                        <table class="w-full text-sm text-left"><thead class="bg-blue-50 text-blue-700 uppercase text-xs"><tr><th class="px-6 py-3">Descrição</th><th class="px-6 py-3 text-right">Valor</th><th class="px-6 py-3 text-center">Ações</th></tr></thead><tbody id="lista-eventuais" class="divide-y divide-blue-50"></tbody></table><div id="empty-eventuais" class="p-4 text-center hidden">Vazio</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -372,9 +467,11 @@
     <!-- Modais Padrão (Com Botão X) -->
     <div id="modal-imposto" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-imposto')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Lançar IR</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarImpostoRenda"><input type="hidden" name="sheetKey" value="IMPOSTO"><div class="mb-4"><label class="text-xs font-bold text-gray-500">Origem</label><select name="tipo" class="w-full border p-2 rounded"><option>Folha Pagamento</option><option>Nota Fiscal</option></select></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input name="descricao" class="w-full border p-2 rounded"></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Valor</label><input name="valor" class="money-mask w-full border p-2 rounded" required></div><div class="mb-4"><label class="text-xs font-bold text-gray-500">Obs</label><input name="obs" class="w-full border p-2 rounded"></div><div class="flex justify-end"><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar</button></div></form></div></div>
     
-    <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-folha')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Folha</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor" required><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <!-- MODAL FOLHA (ATUALIZADO: BRUTO E DESCONTOS) -->
+    <div id="modal-folha" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-folha')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">Folha Pagamento</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarFolha"><input type="hidden" name="sheetKey" value="FOLHA"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Proventos (Bruto)</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-folha">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
     
-    <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600 relative"><button onclick="toggleModal('modal-decimo')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">13º</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor" required><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
+    <!-- MODAL 13º (ATUALIZADO: BRUTO E DESCONTOS) -->
+    <div id="modal-decimo" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border-t-4 border-blue-600 relative"><button onclick="toggleModal('modal-decimo')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4 text-blue-800">13º Salário</h3><form onsubmit="handleSubmit(event)" oninput="calcularLiquidoVisual(this)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarDecimo"><input type="hidden" name="sheetKey" value="DECIMO"><select name="tipo" class="w-full border p-2 mb-3 rounded bg-gray-50"><option>Aposentados</option><option>Pensionistas</option><option>Comissionados</option></select><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Proventos (Bruto)</label><input name="valorBruto" class="money-mask w-full border p-2 rounded border-blue-200" placeholder="R$ 0,00" required></div><div><label class="text-xs font-bold text-gray-500">Descontos</label><input name="valorDescontos" class="money-mask w-full border p-2 rounded border-red-200" placeholder="R$ 0,00" required></div></div><div class="mb-3 p-2 bg-blue-50 rounded text-center text-sm font-bold text-blue-800" id="display-liquido-decimo">Líquido: R$ 0,00</div><input name="obs" class="w-full border p-2 mb-4 rounded" placeholder="Observações"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow">Salvar</button></div></form></div></div>
     
     <div id="modal-outros" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"><button onclick="toggleModal('modal-outros')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button><h3 class="font-bold text-lg mb-4">Outros</h3><form onsubmit="handleSubmit(event)"><input type="hidden" name="id"><input type="hidden" name="action_type" value="adicionarOutrosBancos"><input type="hidden" name="sheetKey" value="OUTROS_BANCOS"><input name="nome" class="w-full border p-2 mb-2" placeholder="Nome"><select name="tipo" class="w-full border p-2 mb-2"><option>Aposentado</option><option>Pensionista</option><option>Comissionado</option></select><input name="banco" class="w-full border p-2 mb-2" placeholder="Banco"><input name="valor" class="money-mask w-full border p-2 mb-2" placeholder="Valor"><input name="obs" class="w-full border p-2 mb-2" placeholder="Obs"><div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button></div></form></div></div>
     
@@ -392,130 +489,109 @@
         
         let confirmCallback = null;
         let CACHE = {};
+        
+        // Variavel global do grafico
+        let financeChart = null;
 
-        // --- INICIALIZAÇÃO E LOGIN ---
-        window.onload = async function() {
-            if(authToken) {
-                // Pre-renderiza UI com usuario em cache para percepção de velocidade
-                if(currentUser) document.getElementById('user-display').innerText = `Usuário: ${currentUser}`;
-                
-                // Valida token em background
-                try {
-                    const res = await fetch(`${API_URL}?action=verificarToken&token=${authToken}`);
-                    const json = await res.json();
-                    if(json.status === 'success') {
-                        currentUser = json.usuario;
-                        iniciarSistema();
-                    } else {
-                        throw new Error('Token inválido');
-                    }
-                } catch(e) {
-                    console.log("Sessão inválida, redirecionando para login...");
-                    logout(false);
-                }
-            } else {
-                document.getElementById('login-screen').style.display = 'flex';
+        // --- 1. FUNÇÕES GLOBAIS E UTILITÁRIAS (DEFINIDAS PRIMEIRO) ---
+        
+        function formatCurrency(v) { 
+            if(v === undefined || v === null || v === '') return 'R$ 0,00';
+            if(typeof v === 'number') return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            
+            // Tratamento especial para strings do Sheets (ex: "1.234,56" ou "R$ 1.234,56")
+            let str = v.toString();
+            if(str.includes(',')) {
+                // Formato BR -> Remove ponto milhar, troca virgula por ponto
+                str = str.replace(/\./g, '').replace(',', '.');
             }
-        };
+            // Remove 'R$' e espaços, mantendo apenas números, sinal e ponto
+            str = str.replace(/[R$\s]/g, '');
+            
+            return parseFloat(str || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); 
+        }
 
-        function iniciarSistema() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('user-display').innerText = `Usuário: ${currentUser}`;
-            const d = new Date();
-            const v = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-            document.getElementById('inputCompetencia').value = v;
-            mudarCompetencia(v);
-            setupMoneyMask();
-            document.getElementById('select-tipo-guia').addEventListener('change', function() {
-                const isPiso = this.value.includes('ENFERMAGEM');
-                document.getElementById('extra-fields-guia').classList.toggle('hidden', !isPiso);
-            });
-            // Pre-carregamento em background
-            preCarregarDados();
+        function showToast(msg, type) { 
+            const t = document.getElementById('toast'); 
+            document.getElementById('toast-msg').innerText = msg; 
+            t.className = type; 
+            t.classList.add('show'); 
+            setTimeout(() => t.classList.remove('show'), 3000); 
+        }
+
+        function setupMoneyMask() { 
+            document.querySelectorAll('.money-mask').forEach(i => i.addEventListener('input', e => { 
+                let v = e.target.value.replace(/\D/g,""); 
+                v = (v/100).toFixed(2) + ""; 
+                e.target.value = "R$ " + v.replace(".",",").replace(/(\d)(?=(\d{3})+(?!\d))/g,"$1."); 
+            })); 
+        }
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function setLoading(act) { document.getElementById('loadingOverlay').classList.toggle('hidden', !act); }
+
+        function openConfirm(msg, callback) { 
+            document.getElementById('confirm-msg').innerText = msg; 
+            document.getElementById('modal-confirm').classList.remove('hidden'); 
+            confirmCallback = callback; 
         }
         
-        function preCarregarDados() {
-            // Inicia downloads silenciosos para cache
-            const views = ['getResumoMensal', 'getConferencia', 'getPendencias', 'getGuiasDetalhadas'];
-            views.forEach(v => fetchData(v));
-            const lists = ['FOLHA_PAGAMENTO', 'DECIMO_TERCEIRO', 'OUTROS_BANCOS', 'CONSIGNADOS', 'PAGAMENTOS_RECORRENTES', 'IMPOSTO_RENDA'];
-            lists.forEach(l => fetchData('getList', `sheet=${l}`));
+        function closeConfirm(yes) { 
+            document.getElementById('modal-confirm').classList.add('hidden'); 
+            if(yes && confirmCallback) confirmCallback(); 
+            confirmCallback = null; 
         }
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            const form = e.target;
-            const btn = form.querySelector('button');
-            const msg = document.getElementById('login-msg');
-            btn.disabled = true; btn.innerText = 'Entrando...'; msg.classList.add('hidden');
-            const fd = new FormData(form);
-            const data = Object.fromEntries(fd.entries());
-            data.action = 'login';
-            try {
-                // Configuração robusta para evitar erros de CORS/Redirect no login
-                const res = await fetch(API_URL, {
-                    method: 'POST', 
-                    redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(data)
-                });
-                
-                const text = await res.text();
-                let json;
-                try { json = JSON.parse(text); } catch(err) { throw new Error("Resposta inválida do servidor"); }
-
-                if(json.status === 'success') {
-                    localStorage.setItem('rpps_token', json.token);
-                    localStorage.setItem('rpps_user', json.usuario);
-                    authToken = json.token; currentUser = json.usuario;
-                    iniciarSistema();
-                } else { 
-                    msg.innerText = json.message || "Erro de conexão"; 
-                    msg.classList.remove('hidden'); 
-                }
-            } catch(e) { 
-                msg.innerText = "Erro de conexão: " + e.message; 
-                msg.classList.remove('hidden'); 
-            } finally { btn.disabled = false; btn.innerText = 'ENTRAR'; }
+        function calcularLiquidoVisual(form) {
+            const bruto = parseFloat(form.valorBruto.value.replace(/\D/g, '') || 0) / 100;
+            const desc = parseFloat(form.valorDescontos.value.replace(/\D/g, '') || 0) / 100;
+            const liq = bruto - desc;
+            const div = form.querySelector('div[id^="display-liquido"]');
+            if(div) div.innerText = "Líquido: " + liq.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         }
 
-        function logout(confirmLogout = true) { 
-            if(confirmLogout && !confirm("Sair do sistema?")) return; 
-            localStorage.removeItem('rpps_token'); 
-            localStorage.removeItem('rpps_user');
-            location.reload(); 
-        }
+        // --- 2. HELPERS DE AÇÃO E RENDERIZADORES (DEFINIDOS ANTES DO USO) ---
 
-        function mudarCompetencia(v) {
-            if(!v) return;
-            currentCompetencia = `${v.split('-')[1]}/${v.split('-')[0]}`;
-            document.querySelectorAll('.current-comp').forEach(e => e.innerText = currentCompetencia);
-            document.getElementById('mobile-comp').innerText = currentCompetencia;
-            CACHE = {}; 
-            const activeBtn = document.querySelector('.nav-btn.tab-active');
-            if(activeBtn) activeBtn.click();
-            preCarregarDados();
-        }
-
-        function showView(view) {
-            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section'));
-            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('tab-active'));
-            document.getElementById(`view-${view}`).classList.remove('hidden-section');
-            document.getElementById(`btn-${view}`).classList.add('tab-active');
+        function getActions(key, row, idIdx) {
+            const id = row[idIdx]; 
+            const safe = s => String(s).replace(/'/g,"\\'").replace(/"/g,"&quot;"); 
+            let params = "{}";
             
-            if(view === 'resumo') carregarResumo();
-            else if(view === 'conferencia') carregarConferencia();
-            else if(view === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
-            else if(view === 'imposto') carregarLista('IMPOSTO_RENDA', 'lista-imposto', 'empty-imposto', renderRowImposto);
-            else if(view === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
-            else if(view === 'consignados') carregarLista('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
-            else if(view === 'adm') { carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente); carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual); }
-            else if(view === 'pendencias') carregarPendencias();
-            else if(view === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
-            else if(view === 'guias') carregarGuias();
+            if(key==='IMPOSTO') params=`{id:'${id}', tipo:'${safe(row[1])}', descricao:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[4])}'}`;
+            
+            // Novos Actions para Folha (Passando Bruto e Desc)
+            if(key==='FOLHA') params=`{id:'${id}', tipo:'${safe(row[1])}', valorBruto:'${safe(row[2])}', valorDescontos:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
+            if(key==='DECIMO') params=`{id:'${id}', tipo:'${safe(row[1])}', valorBruto:'${safe(row[2])}', valorDescontos:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
+            
+            if(key==='CONSIGNADOS') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
+            if(key==='OUTROS_BANCOS') params=`{id:'${id}', nome:'${safe(row[1])}', tipo:'${safe(row[2])}', banco:'${safe(row[3])}', valor:'${safe(row[4])}', obs:'${safe(row[5])}'}`;
+            if(key==='RECORRENTES') params=`{id:'${id}', descricao:'${safe(row[1])}', tipo:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
+            if(key==='OUTROS_PGTOS') params=`{id:'${id}', descricao:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[4])}'}`;
+            
+            let modal = 'modal-folha'; 
+            let action = 'adicionarFolha';
+            
+            if(key==='IMPOSTO') { modal='modal-imposto'; action='adicionarImpostoRenda'; }
+            else if(key==='DECIMO') { modal='modal-decimo'; action='adicionarDecimo'; }
+            else if(key==='CONSIGNADOS') { modal='modal-consignados'; action='adicionarConsignado'; }
+            else if(key==='OUTROS_BANCOS') { modal='modal-outros'; action='adicionarOutrosBancos'; }
+            else if(key==='RECORRENTES') { modal='modal-recorrentes'; action='adicionarRecorrente'; }
+            else if(key==='OUTROS_PGTOS') { modal='modal-eventuais'; action='adicionarOutroPagamento'; }
+            
+            return `<button onclick="abrirModal('${modal}','${action}',${params})" class="text-blue-500 mr-2 hover:bg-blue-100 p-1 rounded transition"><i class="fas fa-pencil-alt"></i></button><button onclick="excluir('${key}','${id}')" class="text-red-400 hover:bg-red-100 p-1 rounded transition"><i class="fas fa-trash"></i></button>`;
         }
 
-        // --- FETCH WITH CACHE ---
+        // Renderers Padronizados
+        function renderRowImposto(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-bold text-blue-900">${row[1]}</td><td class="p-3 text-blue-800">${row[2]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-xs text-blue-500">${row[4]}</td><td class="p-3 text-center">${getActions('IMPOSTO', row, 6)}</td></tr>`; }
+        function renderRowFolha(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-medium text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right font-medium text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 8)}</td></tr>`; }
+        function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-medium text-gray-500">${formatCurrency(row[2])}</td><td class="p-3 text-right font-medium text-red-400 text-xs">-${formatCurrency(row[3])}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-500">${row[5]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 8)}</td></tr>`; }
+        function renderRowOutros(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-xs text-blue-500">${row[2]}</td><td class="p-3 text-blue-800">${row[3]}</td><td class="p-3 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="p-3 text-xs text-blue-400">${row[5]}</td><td class="p-3 text-center">${getActions('OUTROS_BANCOS', row, 8)}</td></tr>`; }
+        function renderRowConsig(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('CONSIGNADOS', row, 6)}</td></tr>`; }
+        function renderRowRecorrente(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 6)}</td></tr>`; }
+        function renderRowEventual(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-center">${getActions('OUTROS_PGTOS', row, 5)}</td></tr>`; }
+
+        // --- 3. FETCH E LOGICA DE DADOS ---
+
         async function fetchData(action, params = '') {
             const cacheKey = `${action}_${currentCompetencia}_${params}`;
             if (CACHE[cacheKey]) { return CACHE[cacheKey]; }
@@ -528,7 +604,50 @@
         }
         function invalidateCache() { CACHE = {}; }
 
-        // --- CARREGAMENTOS ---
+        // --- 4. FUNÇÕES DE CARREGAMENTO (LOGICA PRINCIPAL) ---
+
+        function renderLista(json, tbodyId, emptyId, renderFn) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            if(json.data && json.data.length > 0) {
+                document.getElementById(emptyId).classList.add('hidden');
+                json.data.forEach(r => tbody.innerHTML += renderFn(r));
+            } else { document.getElementById(emptyId).classList.remove('hidden'); }
+        }
+
+        async function carregarLista(sheet, tbodyId, emptyId, renderFn, force = false) {
+            if(force) invalidateCache();
+            const cacheKey = `getList_${currentCompetencia}_sheet=${sheet}`;
+            if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn); return; }
+            setLoading(true);
+            const json = await fetchData('getList', `sheet=${sheet}`);
+            renderLista(json, tbodyId, emptyId, renderFn);
+            setLoading(false);
+        }
+
+        function showView(view) {
+            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section'));
+            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('tab-active'));
+            document.getElementById(`view-${view}`).classList.remove('hidden-section');
+            document.getElementById(`btn-${view}`).classList.add('tab-active');
+            
+            // Aqui as funções renderRow... já estão definidas, evitando ReferenceError
+            if(view === 'resumo') carregarResumo();
+            else if(view === 'graficos') carregarHistorico();
+            else if(view === 'conferencia') carregarConferencia();
+            else if(view === 'folha') carregarLista('FOLHA_PAGAMENTO', 'lista-folha', 'empty-folha', renderRowFolha);
+            else if(view === 'imposto') carregarLista('IMPOSTO_RENDA', 'lista-imposto', 'empty-imposto', renderRowImposto);
+            else if(view === 'outros') carregarLista('OUTROS_BANCOS', 'lista-outros', 'empty-outros', renderRowOutros);
+            else if(view === 'consignados') carregarLista('CONSIGNADOS', 'lista-consignados', 'empty-consignados', renderRowConsig);
+            else if(view === 'adm') { 
+                carregarLista('PAGAMENTOS_RECORRENTES', 'lista-recorrentes', 'empty-recorrentes', renderRowRecorrente); 
+                carregarLista('OUTROS_PAGAMENTOS', 'lista-eventuais', 'empty-eventuais', renderRowEventual); 
+            }
+            else if(view === 'pendencias') carregarPendencias();
+            else if(view === 'decimo') carregarLista('DECIMO_TERCEIRO', 'lista-decimo', 'empty-decimo', renderRowDecimo);
+            else if(view === 'guias') carregarGuias();
+        }
+
         async function carregarResumo(force = false) {
             if(force) invalidateCache();
             const cacheKey = `getResumoMensal_${currentCompetencia}_`;
@@ -541,39 +660,111 @@
         
         function renderResumo(json) {
              if(json.status === 'success') {
-                document.getElementById('dash-total-folha').innerText = formatCurrency(json.folha.total_geral);
-                document.getElementById('dash-sub-folha').innerText = `Normal: ${formatCurrency(json.folha.total_normal)} | 13º: ${formatCurrency(json.folha.total_decimo)}`;
+                const brutoTotal = json.folha.total_bruto_normal + json.folha.total_bruto_decimo;
+                
+                document.getElementById('dash-total-bruto').innerText = formatCurrency(brutoTotal);
+                document.getElementById('dash-total-liquido').innerText = formatCurrency(json.folha.total_geral);
+                document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco);
                 document.getElementById('dash-total-outros').innerText = formatCurrency(json.bancos.outros);
                 document.getElementById('dash-total-imposto').innerText = formatCurrency(json.imposto.total);
-                document.getElementById('dash-total-bradesco').innerText = formatCurrency(json.bancos.bradesco);
                 document.getElementById('dash-total-consig').innerText = formatCurrency(json.consignados.total);
                 document.getElementById('dash-total-adm').innerText = formatCurrency(json.administrativo.total);
                 document.getElementById('dash-recolhimento-pago').innerText = formatCurrency(json.recolhimento.pago);
                 document.getElementById('dash-recolhimento-devido').innerText = formatCurrency(json.recolhimento.devido);
+                
                 document.getElementById('conf-folha').innerText = formatCurrency(json.folha.total_geral);
                 document.getElementById('conf-outros').innerText = formatCurrency(json.bancos.outros);
                 document.getElementById('conf-bradesco').innerText = formatCurrency(json.bancos.bradesco);
             }
         }
 
-        async function carregarLista(sheet, tbodyId, emptyId, renderFn, force = false) {
-            if(force) invalidateCache();
-            const cacheKey = `getList_${currentCompetencia}_sheet=${sheet}`;
-            if (!force && CACHE[cacheKey]) { renderLista(CACHE[cacheKey], tbodyId, emptyId, renderFn); return; }
+        // --- 5. GRÁFICOS E HISTÓRICO ---
+
+        async function carregarHistorico(force = false) {
             setLoading(true);
-            const json = await fetchData('getList', `sheet=${sheet}`);
-            renderLista(json, tbodyId, emptyId, renderFn);
+            const yearInput = document.getElementById('chartYearInput');
+            const anoSelecionado = yearInput.value || new Date().getFullYear();
+            const meses = [];
+            for (let i = 1; i <= 12; i++) meses.push(`${String(i).padStart(2,'0')}/${anoSelecionado}`);
+
+            const promises = meses.map(comp => 
+                fetch(`${API_URL}?action=getResumoMensal&competencia=${comp}&token=${authToken}`)
+                .then(r => r.json())
+            );
+            
+            const resultados = await Promise.all(promises);
+            const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            
+            const dadosDespesa = [];
+            const dadosReceita = [];
+            const tabelaBody = document.getElementById('table-analise-body');
+            tabelaBody.innerHTML = '';
+
+            resultados.forEach((r, idx) => {
+                if(r.status === 'success') {
+                    const folhaBruta = (r.folha.total_bruto_normal || 0) + (r.folha.total_bruto_decimo || 0);
+                    const outrasDesp = (r.administrativo.total || 0);
+                    const totalDespesa = folhaBruta + outrasDesp; 
+                    const repasse = r.recolhimento.pago || 0;
+                    const resultado = totalDespesa - repasse;
+                    const resCor = resultado > 0 ? 'text-red-600' : 'text-blue-600'; 
+                    const resSinal = resultado > 0 ? '+' : ''; 
+
+                    dadosDespesa.push(totalDespesa);
+                    dadosReceita.push(repasse);
+
+                    tabelaBody.innerHTML += `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+                            <td class="px-4 py-3 font-medium text-gray-600">${labels[idx]}</td>
+                            <td class="px-4 py-3 text-right text-gray-500">${formatCurrency(folhaBruta)}</td>
+                            <td class="px-4 py-3 text-right text-gray-400 text-xs">${formatCurrency(outrasDesp)}</td>
+                            <td class="px-4 py-3 text-right font-bold text-gray-700 bg-gray-50">${formatCurrency(totalDespesa)}</td>
+                            <td class="px-4 py-3 text-right text-green-600">${formatCurrency(repasse)}</td>
+                            <td class="px-4 py-3 text-right font-extrabold ${resCor}">${resSinal}${formatCurrency(resultado)}</td>
+                        </tr>
+                    `;
+                } else {
+                    dadosDespesa.push(0); dadosReceita.push(0);
+                    tabelaBody.innerHTML += `<tr><td colspan="6" class="px-4 py-3 text-center text-xs text-gray-400">Sem dados para ${labels[idx]}</td></tr>`;
+                }
+            });
+
+            renderizarGraficoHistorico(labels, dadosDespesa, dadosReceita);
             setLoading(false);
         }
-        
-        function renderLista(json, tbodyId, emptyId, renderFn) {
-            const tbody = document.getElementById(tbodyId);
-            tbody.innerHTML = '';
-            if(json.data && json.data.length > 0) {
-                document.getElementById(emptyId).classList.add('hidden');
-                json.data.forEach(r => tbody.innerHTML += renderFn(r));
-            } else { document.getElementById(emptyId).classList.remove('hidden'); }
+
+        function renderizarGraficoHistorico(labels, dataDespesa, dataReceita) {
+            const ctx = document.getElementById('historicalChart').getContext('2d');
+            if(financeChart) financeChart.destroy();
+
+            financeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Despesas Totais (Bruto)', data: dataDespesa, backgroundColor: '#ef4444', borderRadius: 4 },
+                        { label: 'Repasses (Guias)', data: dataReceita, backgroundColor: '#22c55e', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR', {compactDisplay:'short', notation:'compact'}) } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ctx.parsed.y)
+                            }
+                        }
+                    }
+                }
+            });
         }
+
+        // --- 6. FUNÇÕES DE DADOS ESPECÍFICOS ---
 
         async function carregarGuias() {
             setLoading(true); 
@@ -661,7 +852,8 @@
             } else { emptyDiv.classList.remove('hidden'); }
         }
 
-        // --- SUBMIT ---
+        // --- 7. AÇÕES DE FORMULÁRIO E UI ---
+
         async function handleSubmit(e) {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target).entries());
@@ -678,12 +870,13 @@
                 if(data.action_type === 'adicionarGuiaObrigacao' || data.action_type === 'adicionarPagamentoGuia') { 
                     carregarGuias(); 
                 } else { 
-                    document.querySelector('.nav-btn.tab-active').click(); 
+                    // Refresh view
+                    const activeBtn = document.querySelector('.nav-btn.tab-active');
+                    if(activeBtn) activeBtn.click();
                 }
             } catch(e) { showToast('Erro', 'error'); } finally { setLoading(false); }
         }
 
-        // --- AUXILIARES ---
         async function togglePagamento(id, origem, checkbox) {
             checkbox.disabled = true;
             const novoStatus = checkbox.checked ? 'Pago' : 'Pendente';
@@ -705,11 +898,13 @@
             select.innerHTML = '';
             if(res.status === 'success') { res.data.forEach(t => { select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; }); }
         }
+        
         function abrirModalPagamento(idGuia) { document.getElementById('input-id-guia-ref').value = idGuia; const hoje = new Date().toISOString().split('T')[0]; document.querySelector('#modal-pagamento-guia input[type="date"]').value = hoje; toggleModal('modal-pagamento-guia'); }
+        
         function editarGuia(id, tipo, vPrinc, vDec, vSeg, vPatr, obs) { abrirModal('modal-guia', 'adicionarGuiaObrigacao', { id: id, tipo: tipo, valorPrincipal: vPrinc, valorDecimo: vDec, valorSegurado: vSeg, valorPatronal: vPatr, obs: obs }); const select = document.getElementById('select-tipo-guia'); select.value = tipo; select.dispatchEvent(new Event('change')); }
+        
         function confirmarImportacao(sheetTarget) { openConfirm(`Copiar registros do mês anterior para ${currentCompetencia}?`, async () => { setLoading(true); try { const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'importarMesAnterior', sheetTarget, competenciaAtual:currentCompetencia, usuarioLog:currentUser})}); const json = await res.json(); invalidateCache(); showToast(json.status==='success'?'Sucesso!':'Erro', json.status); if(json.status==='success') document.querySelector('.nav-btn.tab-active').click(); } catch(e) { showToast('Erro conexão', 'error'); } finally { setLoading(false); } }); }
-        function openConfirm(msg, callback) { document.getElementById('confirm-msg').innerText = msg; document.getElementById('modal-confirm').classList.remove('hidden'); confirmCallback = callback; }
-        function closeConfirm(yes) { document.getElementById('modal-confirm').classList.add('hidden'); if(yes && confirmCallback) confirmCallback(); confirmCallback = null; }
+        
         async function excluir(sheetKey, id) { openConfirm("Excluir este registro?", async () => { setLoading(true); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:'excluirRegistro', sheetName:sheetKey, id, competencia:currentCompetencia, usuarioLog:currentUser})}); invalidateCache(); showToast('Excluído', 'success'); if(sheetKey === 'GUIAS') carregarGuias(); else document.querySelector('.nav-btn.tab-active').click(); setLoading(false); }); }
         
         function abrirModal(id, action, editData=null) {
@@ -729,45 +924,120 @@
                     const input = f.querySelector(`[name="${k}"]`);
                     if (input) { input.value = k.includes('valor') ? formatCurrency(editData[k]) : editData[k]; }
                 }
+                
+                // Dispara o cálculo visual se for folha
+                if(id === 'modal-folha' || id === 'modal-decimo') calcularLiquidoVisual(f);
+
                 if (titleEl) titleEl.innerText = titleEl.innerText.replace('Adicionar', 'Editar');
             }
             toggleModal(id);
         }
 
-        // --- RENDERERS ---
-        function renderRowImposto(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-700">${row[1]}</td><td class="p-3">${row[2]}</td><td class="p-3 text-right font-bold">${formatCurrency(row[3])}</td><td class="p-3 text-xs text-gray-500">${row[4]}</td><td class="p-3 text-center">${getActions('IMPOSTO', row, 6)}</td></tr>`; }
-        function renderRowFolha(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}</td><td class="p-3 text-right font-bold text-blue-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs">${row[3]}</td><td class="p-3 text-center">${getActions('FOLHA', row, 6)}</td></tr>`; }
-        function renderRowDecimo(row) { return `<tr class="border-b hover:bg-blue-50 border-blue-100"><td class="p-3 font-medium text-blue-900">${row[1]}</td><td class="p-3 text-right font-bold text-blue-700">${formatCurrency(row[2])}</td><td class="p-3 text-xs text-blue-500">${row[3]}</td><td class="p-3 text-center">${getActions('DECIMO', row, 6)}</td></tr>`; }
-        function renderRowOutros(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}</td><td class="p-3 text-xs">${row[2]}</td><td class="p-3">${row[3]}</td><td class="p-3 text-right font-bold text-orange-600">${formatCurrency(row[4])}</td><td class="p-3 text-xs">${row[5]}</td><td class="p-3 text-center">${getActions('OUTROS_BANCOS', row, 8)}</td></tr>`; }
-        function renderRowConsig(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}</td><td class="p-3 text-right font-bold text-purple-600">${formatCurrency(row[2])}</td><td class="p-3 text-xs">${row[3]}</td><td class="p-3 text-center">${getActions('CONSIGNADOS', row, 6)}</td></tr>`; }
-        function renderRowRecorrente(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}<br><span class="text-xs text-gray-400">${row[2]}</span></td><td class="p-3 text-right font-bold">${formatCurrency(row[3])}</td><td class="p-3 text-center">${getActions('RECORRENTES', row, 6)}</td></tr>`; }
-        function renderRowEventual(row) { return `<tr class="border-b hover:bg-gray-50"><td class="p-3">${row[1]}</td><td class="p-3 text-right font-bold">${formatCurrency(row[2])}</td><td class="p-3 text-center">${getActions('OUTROS_PGTOS', row, 5)}</td></tr>`; }
+        // --- 8. INICIALIZAÇÃO ---
+        window.onload = async function() {
+            if(authToken) {
+                if(currentUser && currentUser !== 'undefined') atualizarNomeUsuario(currentUser);
+                try {
+                    const res = await fetch(`${API_URL}?action=verificarToken&token=${authToken}`);
+                    const json = await res.json();
+                    if(json.status === 'success') {
+                        currentUser = json.usuario;
+                        localStorage.setItem('rpps_user', currentUser);
+                        iniciarSistema();
+                    } else { throw new Error('Token inválido'); }
+                } catch(e) { console.log("Sessão inválida..."); logout(false); }
+            } else { document.getElementById('login-screen').style.display = 'flex'; }
+        };
 
-        function getActions(key, row, idIdx) {
-            const id = row[idIdx]; const safe = s => String(s).replace(/'/g,"\\'").replace(/"/g,"&quot;"); let params = "{}";
-            if(key==='IMPOSTO') params=`{id:'${id}', tipo:'${safe(row[1])}', descricao:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[4])}'}`;
-            if(key==='FOLHA') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
-            if(key==='DECIMO') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
-            if(key==='CONSIGNADOS') params=`{id:'${id}', tipo:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[3])}'}`;
-            if(key==='OUTROS_BANCOS') params=`{id:'${id}', nome:'${safe(row[1])}', tipo:'${safe(row[2])}', banco:'${safe(row[3])}', valor:'${safe(row[4])}', obs:'${safe(row[5])}'}`;
-            if(key==='RECORRENTES') params=`{id:'${id}', descricao:'${safe(row[1])}', tipo:'${safe(row[2])}', valor:'${safe(row[3])}', obs:'${safe(row[5])}'}`;
-            if(key==='OUTROS_PGTOS') params=`{id:'${id}', descricao:'${safe(row[1])}', valor:'${safe(row[2])}', obs:'${safe(row[4])}'}`;
-            let modal = 'modal-folha'; let action = 'adicionarFolha';
-            if(key==='IMPOSTO') { modal='modal-imposto'; action='adicionarImpostoRenda'; }
-            else if(key==='DECIMO') { modal='modal-decimo'; action='adicionarDecimo'; }
-            else if(key==='CONSIGNADOS') { modal='modal-consignados'; action='adicionarConsignado'; }
-            else if(key==='OUTROS_BANCOS') { modal='modal-outros'; action='adicionarOutrosBancos'; }
-            else if(key==='RECORRENTES') { modal='modal-recorrentes'; action='adicionarRecorrente'; }
-            else if(key==='OUTROS_PGTOS') { modal='modal-eventuais'; action='adicionarOutroPagamento'; }
-            return `<button onclick="abrirModal('${modal}','${action}',${params})" class="text-blue-500 mr-2"><i class="fas fa-pencil-alt"></i></button><button onclick="excluir('${key}','${id}')" class="text-red-400"><i class="fas fa-trash"></i></button>`;
+        function iniciarSistema() {
+            document.getElementById('login-screen').style.display = 'none';
+            if(currentUser) atualizarNomeUsuario(currentUser);
+            const d = new Date();
+            const anoAtual = d.getFullYear();
+            const v = `${anoAtual}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            document.getElementById('inputCompetencia').value = v;
+            document.getElementById('chartYearInput').value = anoAtual;
+            mudarCompetencia(v);
+            setupMoneyMask();
+            document.getElementById('select-tipo-guia').addEventListener('change', function() {
+                const isPiso = this.value.includes('ENFERMAGEM');
+                document.getElementById('extra-fields-guia').classList.toggle('hidden', !isPiso);
+            });
+            preCarregarDados();
         }
 
-        // --- UTILS ---
-        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function setLoading(act) { document.getElementById('loadingOverlay').classList.toggle('hidden', !act); }
-        function formatCurrency(v) { return parseFloat(v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
-        function showToast(msg, type) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText=msg; t.className=type; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
-        function setupMoneyMask() { document.querySelectorAll('.money-mask').forEach(i => i.addEventListener('input', e => { let v = e.target.value.replace(/\D/g,""); v=(v/100).toFixed(2)+""; e.target.value="R$ "+v.replace(".",",").replace(/(\d)(?=(\d{3})+(?!\d))/g,"$1."); })); }
+        function atualizarNomeUsuario(nome) {
+            document.getElementById('user-display').innerHTML = `<i class="fas fa-user-circle mr-2"></i>Olá, <strong>${nome}</strong>`;
+        }
+        
+        function preCarregarDados() {
+            const views = ['getResumoMensal', 'getConferencia', 'getPendencias', 'getGuiasDetalhadas'];
+            views.forEach(v => fetchData(v));
+            const lists = ['FOLHA_PAGAMENTO', 'DECIMO_TERCEIRO', 'OUTROS_BANCOS', 'CONSIGNADOS', 'PAGAMENTOS_RECORRENTES', 'IMPOSTO_RENDA'];
+            lists.forEach(l => fetchData('getList', `sheet=${l}`));
+        }
+
+        function handleLogin(e) { /* (Already defined above? No, this is cleaner) */
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button');
+            const msg = document.getElementById('login-msg');
+            const inputUser = form.querySelector('input[name="usuario"]').value;
+            
+            btn.disabled = true; btn.innerText = 'Entrando...'; msg.classList.add('hidden');
+            const fd = new FormData(form);
+            const data = Object.fromEntries(fd.entries());
+            data.action = 'login';
+            
+            fetch(API_URL, {
+                method: 'POST', 
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.text())
+            .then(text => {
+                let json;
+                try { json = JSON.parse(text); } catch(err) { throw new Error("Resposta inválida"); }
+
+                if(json.status === 'success') {
+                    localStorage.setItem('rpps_token', json.token);
+                    const usuarioFinal = json.usuario || inputUser; 
+                    localStorage.setItem('rpps_user', usuarioFinal);
+                    authToken = json.token; currentUser = usuarioFinal;
+                    iniciarSistema();
+                } else { 
+                    msg.innerText = json.message || "Erro de conexão"; 
+                    msg.classList.remove('hidden'); 
+                }
+            })
+            .catch(e => {
+                msg.innerText = "Erro: " + e.message; 
+                msg.classList.remove('hidden'); 
+            })
+            .finally(() => { btn.disabled = false; btn.innerText = 'ENTRAR'; });
+        }
+
+        function logout(confirmLogout = true) { 
+            if(confirmLogout && !confirm("Sair do sistema?")) return; 
+            localStorage.removeItem('rpps_token'); 
+            localStorage.removeItem('rpps_user');
+            location.reload(); 
+        }
+
+        function mudarCompetencia(v) {
+            if(!v) return;
+            currentCompetencia = `${v.split('-')[1]}/${v.split('-')[0]}`;
+            document.querySelectorAll('.current-comp').forEach(e => e.innerText = currentCompetencia);
+            document.getElementById('mobile-comp').innerText = currentCompetencia;
+            CACHE = {}; 
+            const activeBtn = document.querySelector('.nav-btn.tab-active');
+            if(activeBtn) {
+                if(activeBtn.id === 'btn-graficos') carregarHistorico();
+                else activeBtn.click();
+            }
+            preCarregarDados();
+        }
     </script>
 </body>
 </html>
