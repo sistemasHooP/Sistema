@@ -9,7 +9,7 @@
 // ============================================================================
 
 // URL do seu Web App do Google Apps Script
-const API_URL = "https://script.google.com/macros/s/AKfycbwoqXqbz0-8jVYL4KSkdyOOZVV7B1vGaLutXrtbijOp9lm5Ud1wq9UK1UW-dmx24j8Ymg/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbzcFEuN4Tjb_EvvkXJlLZsrpoPDA22rrSk6CiZBvslCUAdMrLL3BNcs6BRxDiGkKCm9Vw/exec"; 
 const API_TOKEN = "TOKEN_SECRETO_RPPS_2026"; 
 
 // ============================================================================
@@ -1058,4 +1058,5 @@ document.addEventListener('DOMContentLoaded', () => {
     const elData = document.getElementById('dataExtensoGuia');
     if(elData) elData.innerText = dataFinal;
 });
+
 
