@@ -1,0 +1,62 @@
+<!-- PÁGINA: GUIA RÁPIDO & DASHBOARD -->
+<div class="animate-fade-in">
+    
+    <!-- Seção de Boas-Vindas -->
+    <div class="mb-10 text-center relative">
+        <h2 class="text-4xl font-black text-slate-800 mb-2 tracking-tight">
+            Olá, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Controlador</span>!
+        </h2>
+        <p class="text-lg text-slate-500 font-medium capitalize" id="dataExtensoGuia">
+            Carregando data...
+        </p>
+    </div>
+
+    <!-- Grade de Acesso Rápido -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+        
+        <!-- Receitas -->
+        <button onclick="router.loadModule('operacional')" class="group bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-file-invoice-dollar text-8xl text-blue-600"></i></div>
+            <div class="h-14 w-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            <h3 class="text-lg font-bold text-slate-700 group-hover:text-blue-700">Receitas</h3>
+            <p class="text-xs text-slate-400 mt-1">Lançar Guias</p>
+        </button>
+
+        <!-- Folha -->
+        <button onclick="router.loadModule('operacional')" class="group bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 hover:border-yellow-200 transition-all duration-300 transform hover:-translate-y-1 text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-users-viewfinder text-8xl text-yellow-500"></i></div>
+            <div class="h-14 w-14 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center text-2xl mb-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors duration-300"><i class="fa-solid fa-users-viewfinder"></i></div>
+            <h3 class="text-lg font-bold text-slate-700 group-hover:text-yellow-600">Folha</h3>
+            <p class="text-xs text-slate-400 mt-1">Gestão de Pessoal</p>
+        </button>
+
+        <!-- Pagamentos -->
+        <button onclick="router.loadModule('financeiro')" class="group bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 hover:border-emerald-200 transition-all duration-300 transform hover:-translate-y-1 text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-money-bill-transfer text-8xl text-emerald-600"></i></div>
+            <div class="h-14 w-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300"><i class="fa-solid fa-money-bill-transfer"></i></div>
+            <h3 class="text-lg font-bold text-slate-700 group-hover:text-emerald-700">Financeiro</h3>
+            <p class="text-xs text-slate-400 mt-1">Contas a Pagar</p>
+        </button>
+
+        <!-- Relatórios -->
+        <button onclick="router.loadModule('gestao')" class="group bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 hover:border-slate-300 transition-all duration-300 transform hover:-translate-y-1 text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-print text-8xl text-slate-600"></i></div>
+            <div class="h-14 w-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-2xl mb-4 group-hover:bg-slate-700 group-hover:text-white transition-colors duration-300"><i class="fa-solid fa-print"></i></div>
+            <h3 class="text-lg font-bold text-slate-700 group-hover:text-slate-900">Relatórios</h3>
+            <p class="text-xs text-slate-400 mt-1">Central de Impressão</p>
+        </button>
+    </div>
+
+    <!-- Dashboard Rápido -->
+    <div class="card-dashboard p-6 border-l-4 border-l-indigo-600">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold text-xl text-slate-800">Visão Geral Financeira</h3>
+            <select id="biAno" class="input-padrao py-1 w-24 bg-white font-bold" onchange="dashboard.atualizarGrafico()">
+                <option>Carregando...</option>
+            </select>
+        </div>
+        <div class="relative h-64 w-full">
+            <canvas id="chartFinanceiro"></canvas>
+        </div>
+    </div>
+</div>
