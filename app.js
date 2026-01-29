@@ -1,33 +1,20 @@
 /**
- * SISTEMA RPPS - ENGINE V3.4 (SMART CACHE & AUTO-UPDATE)
+ * SISTEMA RPPS - ENGINE V3.5 (FIX REFRESH)
  * Arquivo: app.js
- * Correções: Cálculo financeiro, Busca de Pessoas e Atualização Silenciosa.
+ * Correções: Atualização imediata de tabelas e relatórios após salvar.
  */
 
 // ============================================================================
-// 1. CONFIGURAÇÃO
+// 1. CONFIGURAÇÃO DA API
 // ============================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbzcFEuN4Tjb_EvvkXJlLZsrpoPDA22rrSk6CiZBvslCUAdMrLL3BNcs6BRxDiGkKCm9Vw/exec"; 
 const API_TOKEN = "TOKEN_SECRETO_RPPS_2026"; 
 
 // ============================================================================
-// 2. STORE (CACHE LOCAL)
-// ============================================================================
-const store = {
-    config: null,
-    servidores: null, // Lista completa de servidores
-    listasAuxiliares: {}, 
-    cacheData: {}, 
-    
-    // Limpa cache específico para forçar loading visual na próxima vez (opcional)
-    invalidate: (key) => { delete store.cacheData[key]; }
-};
-
-// ============================================================================
-// 3. CORE (COMUNICAÇÃO)
+// 2. CORE: COMUNICAÇÃO E UTILITÁRIOS
 // ============================================================================
 const core = {
-    // silent = true: Não mostra a tela branca de "Carregando..." (bom para updates em background)
+    // silent = true: Não mostra loading (usado para atualizações em background)
     api: async (action, payload = {}, silent = false) => {
         if(!silent) core.ui.toggleLoading(true);
         try {
@@ -51,7 +38,6 @@ const core = {
         } catch (error) {
             if(!silent) core.ui.toggleLoading(false);
             console.error("API Error:", error);
-            // Só alerta se for operação crítica (não background)
             if (!silent) core.ui.alert('Conexão', "Falha ao contactar servidor.\nVerifique a internet.", 'erro');
             return null;
         }
@@ -67,10 +53,10 @@ const core = {
             
             document.getElementById('sys-modal-title').innerText = t;
             document.getElementById('sys-modal-desc').innerHTML = m;
+            
             const iconBg = document.getElementById('sys-icon-bg');
             const iconI = document.getElementById('sys-icon-i');
             
-            // Cores
             iconBg.className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors " + (tp==='erro'?'bg-red-100':tp==='sucesso'?'bg-green-100':'bg-blue-100');
             iconI.className = "fa-solid text-lg " + (tp==='erro'?'fa-triangle-exclamation text-red-600':tp==='sucesso'?'fa-check text-green-600':'fa-info text-blue-600');
             document.getElementById('sys-modal-actions').innerHTML = `<button onclick="core.ui.closeAlert()" class="btn-primary w-full sm:w-auto bg-slate-800 text-white px-4 py-2 rounded">OK</button>`;
@@ -98,18 +84,13 @@ const core = {
     },
     fmt: {
         money: (v) => (Number(v)||0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"}),
-        
-        // CORREÇÃO MATEMÁTICA: Limpeza agressiva e divisão por 100
         moneyParse: (v) => { 
             if (typeof v === 'number') return v;
             if (!v) return 0;
-            // Mantém apenas números e sinal negativo
             let s = String(v).replace(/[^\d-]/g, '');
-            // O input com máscara salva "2.000,00" como "200000" (sem pontos/vírgulas)
-            // Então dividimos por 100 para ter os centavos
             return (parseFloat(s) / 100) || 0;
         },
-        
+        round: (v) => Math.round(v * 100) / 100,
         dateBR: (d) => {
             if (!d) return '-';
             const dt = new Date(d);
@@ -117,7 +98,6 @@ const core = {
             const userTimezoneOffset = dt.getTimezoneOffset() * 60000;
             return new Date(dt.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
         },
-        
         comp: (c) => { 
             if(!c) return '-';
             const s = String(c).replace(/'/g,"");
@@ -125,13 +105,10 @@ const core = {
             if(p.length === 2) return `${p[1]}/${p[0]}`; 
             return s;
         },
-
-        // CORREÇÃO FILTROS: Normalizador de Competência
         toISOMonth: (val) => {
             if(!val) return "";
             let s = String(val).replace(/'/g, "").trim();
-            if(s.match(/^\d{4}-\d{2}$/)) return s; // Já é ISO
-            // Tenta converter datas ou formatos BR
+            if(s.match(/^\d{4}-\d{2}$/)) return s; 
             if(s.includes('/') || s.includes('-')) {
                 const date = new Date(s);
                 if(!isNaN(date.getTime())) {
@@ -161,14 +138,23 @@ const core = {
 };
 
 // ============================================================================
+// 3. STORE (CACHE LOCAL)
+// ============================================================================
+const store = {
+    config: null,
+    servidores: null,
+    listasAuxiliares: {}, 
+    cacheData: {}, 
+    invalidate: (key) => { delete store.cacheData[key]; }
+};
+
+// ============================================================================
 // 4. ROTEAMENTO
 // ============================================================================
 const router = {
     loadModule: async (moduleName) => {
         const container = document.getElementById('dynamic-content');
         
-        // Verifica se já está carregado para evitar piscar a tela
-        // Se já tem conteúdo, mantém o spinner "sobreposto" ou discreto, não apaga tudo
         if (!container.innerHTML.includes('id="page-' + moduleName)) {
             container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-blue-500"></i><p>Carregando ${moduleName}...</p></div>`;
         }
@@ -189,12 +175,10 @@ const router = {
 
             if (moduleName === 'home') dashboard.init();
             if (moduleName === 'folha') {
-                folha.init(); // Inicia com carregamento inteligente
+                folha.init(); 
                 core.utils.applyMasks();
                 core.utils.initInputs();
             }
-            if (moduleName === 'financeiro') financeiro.init();
-
         } catch (e) {
             console.warn(e);
             container.innerHTML = `<div class="p-8 text-center text-red-500">Erro ao carregar módulo.</div>`;
@@ -203,12 +187,12 @@ const router = {
 };
 
 // ============================================================================
-// 5. MÓDULOS DE NEGÓCIO (Lógica)
+// 5. MÓDULOS DE NEGÓCIO
 // ============================================================================
 
-// --- DASHBOARD ---
+// --- DASHBOARD (HOME) ---
 const dashboard = {
-    chart: null,
+    chart: null, dataCache: null,
     init: () => {
         const now = new Date();
         const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -216,12 +200,11 @@ const dashboard = {
         const elData = document.getElementById('dataExtensoGuia');
         if(elData) elData.innerText = dataStr.charAt(0).toUpperCase() + dataStr.slice(1);
         
-        // Estratégia de Cache Inteligente
         if (store.cacheData['dashboard']) {
-            dashboard.atualizarGrafico(); // Mostra cache
-            dashboard.carregar(true);     // Atualiza silencioso
+            dashboard.atualizarGrafico(); 
+            dashboard.carregar(true);     
         } else {
-            dashboard.carregar(false);    // Carrega normal
+            dashboard.carregar(false);    
         }
     },
     carregar: async (silent = false) => {
@@ -234,19 +217,17 @@ const dashboard = {
     },
     popularFiltros: () => {
         const s = document.getElementById('biAno'); if(!s) return;
-        if(s.options.length > 1) return; // Já populou
+        if(s.options.length > 1) return; 
         const y = new Date().getFullYear();
         s.innerHTML = `<option value="${y}">${y}</option><option value="${y-1}">${y-1}</option>`;
     },
-    atualizarGrafico: () => { /* ... Manter lógica do gráfico ... */ }
+    atualizarGrafico: () => { /* Gráfico aqui... */ }
 };
 
 // --- FOLHA DE PAGAMENTO ---
 const folha = {
-    // Inicialização Inteligente
     init: () => {
         folha.switchView('operacional');
-        // Pré-carrega servidores em background SE AINDA NÃO TIVER
         if(!store.servidores) folha.carregarCacheServidores();
     },
 
@@ -264,17 +245,19 @@ const folha = {
 
         if(v === 'operacional') {
              folha.carregarNomes();
-             folha.carregarFolhas(); // Chama carregador inteligente
+             // Carrega a tabela. Se já tiver salvo algo recentemente, o cache estará atualizado.
+             folha.carregarFolhas(); 
         } else if (v === 'outros-bancos') {
              folha.carregarOutrosBancos();
              const inp = document.getElementById('filtroCompOutrosBancos');
              if(inp && !inp.value) inp.value = new Date().toISOString().substring(0,7);
         } else {
+             // Força renderização do relatório sempre que abrir a aba
+             // Isso garante que pegue os dados mais recentes do store
              folha.renderizarRelatorio();
         }
     },
 
-    // --- ABA GERAL: CÁLCULOS E LISTAGEM ---
     carregarNomes: async () => {
         if (store.listasAuxiliares['nomesFolha']) {
             folha.popularSelectTipoFolha(store.listasAuxiliares['nomesFolha']);
@@ -296,7 +279,6 @@ const folha = {
         }
     },
 
-    // CORREÇÃO: Cálculo com moneyParse atualizado
     calcularLiquido: () => {
         const b = core.fmt.moneyParse(document.getElementById('folhaBruto').value);
         const d = core.fmt.moneyParse(document.getElementById('folhaDescontos').value);
@@ -318,37 +300,30 @@ const folha = {
             };
             if((await core.api('salvarFolha', d))?.success) { 
                 core.ui.alert('Ok', 'Salvo com sucesso!', 'sucesso'); 
-                store.invalidate('folhas'); // Limpa cache específico
+                
+                // CORREÇÃO CRÍTICA: Limpa Cache e Filtros para ver o novo dado
+                store.invalidate('folhas'); 
+                folha.limparFiltro(); // Reseta filtro visual e recarrega
+                
                 folha.cancelarEdicao(); 
-                folha.carregarFolhas(true); // Força refresh
             }
         });
     },
 
-    // INTELIGÊNCIA DE CARREGAMENTO (SWR)
     carregarFolhas: async (forceRefresh = false) => {
         const tb = document.getElementById('listaFolhas');
         if(!tb) return;
         
         let list = store.cacheData['folhas'];
 
-        // 1. Se tem cache, mostra imediatamente
-        if (list && !forceRefresh) {
-            folha.renderizarTabelaFolhas(list);
-        } else {
+        if (!list || forceRefresh) {
             tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-400 italic">Carregando...</td></tr>';
+            // Busca dados novos
+            list = await core.api('buscarFolhas', {}, !forceRefresh); 
+            if (list) store.cacheData['folhas'] = list;
         }
-
-        // 2. Busca atualização em Background (Silent)
-        // Se forceRefresh = true, loading normal. Se não, silent.
-        const isSilent = !!list && !forceRefresh;
         
-        const dataNova = await core.api('buscarFolhas', {}, isSilent);
-        
-        if (dataNova) {
-            store.cacheData['folhas'] = dataNova;
-            folha.renderizarTabelaFolhas(dataNova);
-        }
+        folha.renderizarTabelaFolhas(list);
     },
 
     renderizarTabelaFolhas: (list) => {
@@ -361,13 +336,12 @@ const folha = {
         if(list && list.length) {
             list.forEach(r => {
                 const compRow = String(r[1]).replace(/'/g, "");
-                // Filtro local instantâneo
+                // Se tiver filtro, aplica. Se filtro vazio, mostra tudo.
                 if(filtro && core.fmt.toISOMonth(compRow) !== filtro) return;
 
                 contador++;
                 const b=core.fmt.moneyParse(r[4]); const d=core.fmt.moneyParse(r[5]); const l=core.fmt.moneyParse(r[6]);
                 tB+=b; tD+=d; tL+=l;
-                
                 const obs = String(r[7]||'').replace(/'/g, "\\'").replace(/\n/g, " ");
 
                 tb.innerHTML += `
@@ -425,15 +399,16 @@ const folha = {
     },
 
     limparFiltro: () => {
-        document.getElementById('filtroHistoricoFolha').value = '';
-        folha.renderizarTabelaFolhas(store.cacheData['folhas']); // Instantâneo
+        const el = document.getElementById('filtroHistoricoFolha');
+        if(el) el.value = '';
+        // Ao limpar o filtro, chamamos carregarFolhas passando TRUE para forçar refresh do servidor
+        // e garantir que o novo dado apareça.
+        folha.carregarFolhas(true); 
     },
 
     // --- ABA OUTROS BANCOS ---
-    
-    // CACHE DE SERVIDORES (Download Único)
     carregarCacheServidores: async () => {
-        if(store.servidores) return; // Já tem
+        if(store.servidores) return; 
         const lista = await core.api('buscarTodosServidores', {}, true); 
         if (lista) store.servidores = lista;
     },
@@ -450,7 +425,7 @@ const folha = {
         if (!store.servidores) {
             div.innerHTML = '<div class="p-2 text-xs text-gray-400">Carregando base... (Tente em 2s)</div>';
             div.style.display = 'block';
-            folha.carregarCacheServidores(); // Tenta de novo se falhou antes
+            folha.carregarCacheServidores(); 
             return;
         }
 
@@ -480,7 +455,6 @@ const folha = {
 
     handleSaveOutrosBancos: async (e) => {
         e.preventDefault();
-        // Lógica de salvamento...
         const d = {
             id: document.getElementById('idRemessaEdicao').value,
             competencia: document.getElementById('filtroCompOutrosBancos').value,
@@ -505,14 +479,11 @@ const folha = {
         const comp = document.getElementById('filtroCompOutrosBancos').value;
         if(!comp) return;
         
-        // --- KPI CORRIGIDO ---
-        // Garante que temos as folhas para calcular o total
         if (!store.cacheData['folhas']) await folha.carregarFolhas(true);
         
         let totLiqGeral = 0;
         if(store.cacheData['folhas']) {
             store.cacheData['folhas'].forEach(f => {
-                // Compara YYYY-MM com YYYY-MM usando o normalizador
                 if(core.fmt.toISOMonth(f[1]) === comp) {
                     totLiqGeral += core.fmt.moneyParse(f[6]);
                 }
@@ -520,7 +491,6 @@ const folha = {
         }
         document.getElementById('kpiFolhaLiquida').innerText = core.fmt.money(totLiqGeral);
 
-        // Busca Remessas
         const lista = await core.api('buscarRemessasOutrosBancos', comp, true); // Silent
         const tb = document.getElementById('listaOutrosBancos');
         tb.innerHTML = '';
@@ -531,10 +501,8 @@ const folha = {
             lista.forEach(r => {
                 const val = core.fmt.moneyParse(r[7]);
                 totOutros += val;
-                
                 const nomeSafe = String(r[4]).replace(/'/g, "\\'");
                 const obsSafe = String(r[8]||'').replace(/'/g, "\\'");
-
                 tb.innerHTML += `
                 <tr class="border-b border-slate-100 hover:bg-slate-50">
                     <td class="pl-5 py-3"><div class="font-bold text-slate-700 text-xs">${r[4]}</div><div class="text-[10px] text-slate-400 font-mono">${r[5]}</div></td>
@@ -592,6 +560,8 @@ const folha = {
         }
 
         const ano = sel.value;
+        
+        // Verifica se há dados no cache, senão busca
         const processar = (list) => {
              const m = Array.from({length:12}, (_,i)=>({nome: new Date(0,i).toLocaleString('pt-BR',{month:'long'}), b:0, d:0}));
              list.forEach(r => {
@@ -622,7 +592,7 @@ const folha = {
 };
 
 // --- PLACEHOLDERS ---
-const financeiro = { init: ()=>{} }; // Placeholder para não quebrar o router
+const financeiro = { init: ()=>{} }; 
 const config = { carregar:()=>{} };
 const arquivos = {}; const irrf = {}; const previdencia = {}; const margem = {}; const consignados = {}; const despesas = {}; const importacao = {}; const relatorios = { carregarCabecalho:()=>{} };
 
@@ -631,8 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
     core.utils.applyMasks();
     core.utils.initInputs();
     
-    // Busca config com silent=true para não piscar
-    core.api('buscarConfiguracoes', {}, true).then(c => {
+    core.api('buscarConfiguracoes').then(c => {
         if(c) {
             store.config = c;
             document.getElementById('sidebar-institution-name').innerText = c.nome;
