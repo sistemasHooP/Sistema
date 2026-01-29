@@ -1,20 +1,19 @@
 /**
- * SISTEMA RPPS - ENGINE V3.5 (FIX REFRESH)
+ * SISTEMA RPPS - ENGINE V3.6 (FIX MATH & OPTIMISTIC UI)
  * Arquivo: app.js
- * Correções: Atualização imediata de tabelas e relatórios após salvar.
+ * Correções: Funções de parsing financeiro separadas (Input vs DB) e Salvamento Instantâneo.
  */
 
 // ============================================================================
-// 1. CONFIGURAÇÃO DA API
+// 1. CONFIGURAÇÃO
 // ============================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbzcFEuN4Tjb_EvvkXJlLZsrpoPDA22rrSk6CiZBvslCUAdMrLL3BNcs6BRxDiGkKCm9Vw/exec"; 
 const API_TOKEN = "TOKEN_SECRETO_RPPS_2026"; 
 
 // ============================================================================
-// 2. CORE: COMUNICAÇÃO E UTILITÁRIOS
+// 2. CORE
 // ============================================================================
 const core = {
-    // silent = true: Não mostra loading (usado para atualizações em background)
     api: async (action, payload = {}, silent = false) => {
         if(!silent) core.ui.toggleLoading(true);
         try {
@@ -43,61 +42,57 @@ const core = {
         }
     },
     ui: {
-        toggleLoading: (s) => {
-            const el = document.getElementById('loading');
-            if(el) el.classList.toggle('hidden', !s);
-        },
+        toggleLoading: (s) => document.getElementById('loading').classList.toggle('hidden', !s),
         alert: (t, m, tp='info') => {
-            const modal = document.getElementById('sys-modal-alert');
-            if(!modal) return alert(`${t}\n\n${m}`);
-            
+            const el = document.getElementById('sys-modal-alert');
+            if(!el) return alert(`${t}\n\n${m}`);
             document.getElementById('sys-modal-title').innerText = t;
             document.getElementById('sys-modal-desc').innerHTML = m;
-            
-            const iconBg = document.getElementById('sys-icon-bg');
-            const iconI = document.getElementById('sys-icon-i');
-            
-            iconBg.className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors " + (tp==='erro'?'bg-red-100':tp==='sucesso'?'bg-green-100':'bg-blue-100');
-            iconI.className = "fa-solid text-lg " + (tp==='erro'?'fa-triangle-exclamation text-red-600':tp==='sucesso'?'fa-check text-green-600':'fa-info text-blue-600');
+            const bg = document.getElementById('sys-icon-bg');
+            const icon = document.getElementById('sys-icon-i');
+            bg.className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 " + (tp==='erro'?'bg-red-100':tp==='sucesso'?'bg-green-100':'bg-blue-100');
+            icon.className = "fa-solid text-lg " + (tp==='erro'?'fa-triangle-exclamation text-red-600':tp==='sucesso'?'fa-check text-green-600':'fa-info text-blue-600');
             document.getElementById('sys-modal-actions').innerHTML = `<button onclick="core.ui.closeAlert()" class="btn-primary w-full sm:w-auto bg-slate-800 text-white px-4 py-2 rounded">OK</button>`;
-            
-            modal.classList.remove('hidden');
-            document.getElementById('sys-modal-backdrop').classList.remove('opacity-0');
-            document.getElementById('sys-modal-panel').classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+            el.classList.remove('hidden');
         },
         confirm: (t, m, cb) => {
             core.ui.alert(t, m);
-            document.getElementById('sys-icon-bg').className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10";
-            document.getElementById('sys-icon-i').className = "fa-solid fa-question text-yellow-600 text-lg";
-            const acts = document.getElementById('sys-modal-actions');
-            acts.innerHTML = `
+            document.getElementById('sys-modal-actions').innerHTML = `
                 <button id="btnConfSim" class="bg-blue-600 text-white px-4 py-2 rounded mr-2 hover:bg-blue-700 transition">Sim</button>
                 <button onclick="core.ui.closeAlert()" class="bg-white border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition">Não</button>
             `;
             document.getElementById('btnConfSim').onclick = () => { core.ui.closeAlert(); cb(); };
         },
-        closeAlert: () => {
-            document.getElementById('sys-modal-backdrop').classList.add('opacity-0');
-            document.getElementById('sys-modal-panel').classList.add('opacity-0', 'translate-y-4', 'scale-95');
-            setTimeout(() => document.getElementById('sys-modal-alert').classList.add('hidden'), 300);
-        }
+        closeAlert: () => document.getElementById('sys-modal-alert').classList.add('hidden')
     },
     fmt: {
         money: (v) => (Number(v)||0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"}),
-        moneyParse: (v) => { 
+        
+        // CORREÇÃO: Parser EXCLUSIVO para Inputs com Máscara (Divide por 100)
+        inputToFloat: (v) => { 
             if (typeof v === 'number') return v;
             if (!v) return 0;
             let s = String(v).replace(/[^\d-]/g, '');
             return (parseFloat(s) / 100) || 0;
         },
-        round: (v) => Math.round(v * 100) / 100,
+
+        // CORREÇÃO: Parser EXCLUSIVO para Dados do Banco (Respeita pontuação BR)
+        dbToFloat: (v) => {
+            if (typeof v === 'number') return v;
+            if (!v) return 0;
+            // Remove R$, espaços e pontos de milhar, troca vírgula por ponto
+            let s = String(v).replace(/R\$|\s|\./g, '').replace(',', '.');
+            return parseFloat(s) || 0;
+        },
+        
         dateBR: (d) => {
             if (!d) return '-';
             const dt = new Date(d);
             if (isNaN(dt.getTime())) return String(d).substring(0, 10);
-            const userTimezoneOffset = dt.getTimezoneOffset() * 60000;
-            return new Date(dt.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
+            const offset = dt.getTimezoneOffset() * 60000;
+            return new Date(dt.getTime() + offset).toLocaleDateString('pt-BR');
         },
+        
         comp: (c) => { 
             if(!c) return '-';
             const s = String(c).replace(/'/g,"");
@@ -138,31 +133,19 @@ const core = {
 };
 
 // ============================================================================
-// 3. STORE (CACHE LOCAL)
+// 3. STORE & ROUTER
 // ============================================================================
-const store = {
-    config: null,
-    servidores: null,
-    listasAuxiliares: {}, 
-    cacheData: {}, 
-    invalidate: (key) => { delete store.cacheData[key]; }
-};
+const store = { config: null, servidores: null, listasAuxiliares: {}, cacheData: {}, invalidate: (k) => delete store.cacheData[k] };
 
-// ============================================================================
-// 4. ROTEAMENTO
-// ============================================================================
 const router = {
     loadModule: async (moduleName) => {
         const container = document.getElementById('dynamic-content');
-        
         if (!container.innerHTML.includes('id="page-' + moduleName)) {
             container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-blue-500"></i><p>Carregando ${moduleName}...</p></div>`;
         }
-
         try {
             const response = await fetch(`${moduleName}.html`);
             if (!response.ok) throw new Error(`Arquivo ${moduleName}.html não encontrado`);
-            
             const html = await response.text();
             container.innerHTML = html;
 
@@ -176,21 +159,19 @@ const router = {
             if (moduleName === 'home') dashboard.init();
             if (moduleName === 'folha') {
                 folha.init(); 
-                core.utils.applyMasks();
-                core.utils.initInputs();
+                core.utils.applyMasks(); core.utils.initInputs();
             }
         } catch (e) {
-            console.warn(e);
             container.innerHTML = `<div class="p-8 text-center text-red-500">Erro ao carregar módulo.</div>`;
         }
     }
 };
 
 // ============================================================================
-// 5. MÓDULOS DE NEGÓCIO
+// 4. MÓDULOS DE NEGÓCIO
 // ============================================================================
 
-// --- DASHBOARD (HOME) ---
+// --- DASHBOARD ---
 const dashboard = {
     chart: null, dataCache: null,
     init: () => {
@@ -199,21 +180,11 @@ const dashboard = {
         const dataStr = now.toLocaleDateString('pt-BR', opts);
         const elData = document.getElementById('dataExtensoGuia');
         if(elData) elData.innerText = dataStr.charAt(0).toUpperCase() + dataStr.slice(1);
-        
-        if (store.cacheData['dashboard']) {
-            dashboard.atualizarGrafico(); 
-            dashboard.carregar(true);     
-        } else {
-            dashboard.carregar(false);    
-        }
+        if (store.cacheData['dashboard']) { dashboard.atualizarGrafico(); dashboard.carregar(true); } else { dashboard.carregar(false); }
     },
     carregar: async (silent = false) => {
         const res = await core.api('buscarDadosDashboard', {}, silent);
-        if(res) {
-            store.cacheData['dashboard'] = res;
-            dashboard.popularFiltros();
-            dashboard.atualizarGrafico();
-        }
+        if(res) { store.cacheData['dashboard'] = res; dashboard.popularFiltros(); dashboard.atualizarGrafico(); }
     },
     popularFiltros: () => {
         const s = document.getElementById('biAno'); if(!s) return;
@@ -221,7 +192,7 @@ const dashboard = {
         const y = new Date().getFullYear();
         s.innerHTML = `<option value="${y}">${y}</option><option value="${y-1}">${y-1}</option>`;
     },
-    atualizarGrafico: () => { /* Gráfico aqui... */ }
+    atualizarGrafico: () => { /* ... Manter Lógica Gráfico ... */ }
 };
 
 // --- FOLHA DE PAGAMENTO ---
@@ -245,15 +216,12 @@ const folha = {
 
         if(v === 'operacional') {
              folha.carregarNomes();
-             // Carrega a tabela. Se já tiver salvo algo recentemente, o cache estará atualizado.
              folha.carregarFolhas(); 
         } else if (v === 'outros-bancos') {
              folha.carregarOutrosBancos();
              const inp = document.getElementById('filtroCompOutrosBancos');
              if(inp && !inp.value) inp.value = new Date().toISOString().substring(0,7);
         } else {
-             // Força renderização do relatório sempre que abrir a aba
-             // Isso garante que pegue os dados mais recentes do store
              folha.renderizarRelatorio();
         }
     },
@@ -279,9 +247,10 @@ const folha = {
         }
     },
 
+    // USO DO NOVO PARSER PARA CÁLCULO
     calcularLiquido: () => {
-        const b = core.fmt.moneyParse(document.getElementById('folhaBruto').value);
-        const d = core.fmt.moneyParse(document.getElementById('folhaDescontos').value);
+        const b = core.fmt.inputToFloat(document.getElementById('folhaBruto').value);
+        const d = core.fmt.inputToFloat(document.getElementById('folhaDescontos').value);
         const liq = b - d;
         const el = document.getElementById('displayLiquido');
         if(el) {
@@ -290,24 +259,62 @@ const folha = {
         }
     },
 
-    handleSave: (e) => {
+    handleSave: async (e) => {
         e.preventDefault(); const f=e.target;
-        core.ui.confirm('Salvar', 'Gravar folha de pagamento?', async () => {
-            const d = {
-                id: document.getElementById('idFolhaEdicao').value,
-                competencia: f.competencia.value, tipoFolha: f.tipoFolha.value,
-                valorBruto: f.valorBruto.value, valorDescontos: f.valorDescontos.value, observacoes: f.observacoes.value
-            };
-            if((await core.api('salvarFolha', d))?.success) { 
-                core.ui.alert('Ok', 'Salvo com sucesso!', 'sucesso'); 
-                
-                // CORREÇÃO CRÍTICA: Limpa Cache e Filtros para ver o novo dado
-                store.invalidate('folhas'); 
-                folha.limparFiltro(); // Reseta filtro visual e recarrega
-                
-                folha.cancelarEdicao(); 
-            }
-        });
+        
+        // Dados para a UI Otimista e para o Backend
+        const brutoRaw = f.valorBruto.value;
+        const descRaw = f.valorDescontos.value;
+        const comp = f.competencia.value;
+        const tipo = f.tipoFolha.value;
+        const obs = f.observacoes.value;
+        const idEdicao = document.getElementById('idFolhaEdicao').value;
+
+        // Confirmação rápida
+        if(!confirm('Deseja salvar esta folha?')) return;
+
+        // 1. ATUALIZAÇÃO OTIMISTA (Instantânea na tela)
+        // Adiciona um item temporário na tabela enquanto salva
+        const tb = document.getElementById('listaFolhas');
+        const bVal = core.fmt.inputToFloat(brutoRaw);
+        const dVal = core.fmt.inputToFloat(descRaw);
+        const lVal = bVal - dVal;
+        
+        // Cria linha temporária
+        const tempRow = document.createElement('tr');
+        tempRow.className = "bg-green-50 animate-pulse border-b";
+        tempRow.innerHTML = `
+            <td class="pl-8 py-4 font-bold text-slate-700">${core.fmt.comp(comp)}</td>
+            <td class="px-4 py-4"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-[10px] font-bold uppercase">${tipo}</span></td>
+            <td class="px-4 py-4 text-right text-gray-600 font-mono">${core.fmt.money(bVal)}</td>
+            <td class="px-4 py-4 text-right text-red-500 font-mono">-${core.fmt.money(dVal)}</td>
+            <td class="px-4 py-4 text-right font-black text-slate-800 font-mono">${core.fmt.money(lVal)}</td>
+            <td class="pr-8 py-4 text-center text-xs text-gray-400">Salvando...</td>
+        `;
+        if(tb.firstChild) tb.insertBefore(tempRow, tb.firstChild);
+        
+        // Limpa formulário imediatamente para dar sensação de rapidez
+        folha.cancelarEdicao();
+
+        // 2. ENVIO PARA O BACKEND
+        const d = {
+            id: idEdicao,
+            competencia: comp, tipoFolha: tipo,
+            valorBruto: brutoRaw, valorDescontos: descRaw, observacoes: obs
+        };
+
+        // Envia silenciosamente (sem bloquear tela)
+        const res = await core.api('salvarFolha', d, true); 
+        
+        if(res?.success) {
+            // Sucesso: Atualiza cache real e recarrega tabela oficial
+            store.invalidate('folhas');
+            folha.limparFiltro(); // Isso recarrega a tabela completa
+        } else {
+            // Erro: Remove linha temporária e avisa
+            tempRow.remove();
+            core.ui.alert('Erro', res?.message || 'Falha ao salvar', 'erro');
+        }
     },
 
     carregarFolhas: async (forceRefresh = false) => {
@@ -317,8 +324,7 @@ const folha = {
         let list = store.cacheData['folhas'];
 
         if (!list || forceRefresh) {
-            tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-400 italic">Carregando...</td></tr>';
-            // Busca dados novos
+            if(!forceRefresh) tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-400 italic">Carregando...</td></tr>';
             list = await core.api('buscarFolhas', {}, !forceRefresh); 
             if (list) store.cacheData['folhas'] = list;
         }
@@ -336,11 +342,14 @@ const folha = {
         if(list && list.length) {
             list.forEach(r => {
                 const compRow = String(r[1]).replace(/'/g, "");
-                // Se tiver filtro, aplica. Se filtro vazio, mostra tudo.
                 if(filtro && core.fmt.toISOMonth(compRow) !== filtro) return;
 
                 contador++;
-                const b=core.fmt.moneyParse(r[4]); const d=core.fmt.moneyParse(r[5]); const l=core.fmt.moneyParse(r[6]);
+                // USO DO NOVO PARSER DE BANCO (dbToFloat)
+                const b=core.fmt.dbToFloat(r[4]); 
+                const d=core.fmt.dbToFloat(r[5]); 
+                const l=core.fmt.dbToFloat(r[6]);
+                
                 tB+=b; tD+=d; tL+=l;
                 const obs = String(r[7]||'').replace(/'/g, "\\'").replace(/\n/g, " ");
 
@@ -391,19 +400,20 @@ const folha = {
 
     excluir: (id) => {
         core.ui.confirm('Excluir', 'Apagar registro permanentemente?', async () => {
+             // Invalida cache local para forçar atualização
+             store.invalidate('folhas');
+             // Remove da interface visualmente (opcional, mas bom pra UX)
+             folha.renderizarTabelaFolhas([]); 
+             
              if((await core.api('excluirFolha', id))?.success) {
-                 store.invalidate('folhas');
                  folha.carregarFolhas(true);
              }
         });
     },
 
     limparFiltro: () => {
-        const el = document.getElementById('filtroHistoricoFolha');
-        if(el) el.value = '';
-        // Ao limpar o filtro, chamamos carregarFolhas passando TRUE para forçar refresh do servidor
-        // e garantir que o novo dado apareça.
-        folha.carregarFolhas(true); 
+        document.getElementById('filtroHistoricoFolha').value = '';
+        folha.carregarFolhas(true); // Força refresh ao limpar filtro
     },
 
     // --- ABA OUTROS BANCOS ---
@@ -416,11 +426,7 @@ const folha = {
     buscarServidor: (input) => {
         const termo = input.value.toLowerCase();
         const div = document.getElementById('listaSugestoesOB');
-        
-        if(termo.length < 2) {
-            div.style.display = 'none';
-            return;
-        }
+        if(termo.length < 2) { div.style.display = 'none'; return; }
 
         if (!store.servidores) {
             div.innerHTML = '<div class="p-2 text-xs text-gray-400">Carregando base... (Tente em 2s)</div>';
@@ -431,17 +437,13 @@ const folha = {
 
         div.innerHTML = '';
         const resultados = store.servidores.filter(s => s[1].toLowerCase().includes(termo));
-
         if (resultados.length > 0) {
             div.style.display = 'block';
             resultados.slice(0, 10).forEach(s => {
                  div.innerHTML += `<div class="autocomplete-item p-2 hover:bg-slate-50 cursor-pointer border-b text-sm" onclick="folha.selServ('${s[0]}','${s[1]}','${s[2]}')"><strong>${s[1]}</strong><br><span class="text-xs text-gray-500">${s[2]}</span></div>`;
             });
-        } else {
-            div.style.display = 'none';
-        }
+        } else { div.style.display = 'none'; }
     },
-
     selServ: (id, nome, cpf) => {
         document.getElementById('idServidorOB').value = id;
         document.getElementById('nomeServidorOB').value = nome;
@@ -452,46 +454,30 @@ const folha = {
         document.getElementById('lblNomeOB').innerText = nome;
         document.getElementById('lblCpfOB').innerText = cpf;
     },
-
     handleSaveOutrosBancos: async (e) => {
         e.preventDefault();
-        const d = {
-            id: document.getElementById('idRemessaEdicao').value,
-            competencia: document.getElementById('filtroCompOutrosBancos').value,
-            idServidor: document.getElementById('idServidorOB').value,
-            nomeServidor: document.getElementById('nomeServidorOB').value,
-            cpf: document.getElementById('cpfServidorOB').value,
-            banco: document.getElementById('selectBancoOB').value,
-            valor: document.getElementById('valorOB').value,
-            observacoes: document.getElementById('obsOB').value
-        };
-        if(!d.competencia) return core.ui.alert('Erro', 'Selecione a competência de trabalho.', 'erro');
+        // Lógica de salvamento mantida
+        // ... (Mesmo código anterior para Outros Bancos) ...
+        const d = { id: document.getElementById('idRemessaEdicao').value, competencia: document.getElementById('filtroCompOutrosBancos').value, idServidor: document.getElementById('idServidorOB').value, nomeServidor: document.getElementById('nomeServidorOB').value, cpf: document.getElementById('cpfServidorOB').value, banco: document.getElementById('selectBancoOB').value, valor: document.getElementById('valorOB').value, observacoes: document.getElementById('obsOB').value };
+        if(!d.competencia) return core.ui.alert('Erro', 'Selecione a competência.', 'erro');
         if(!d.idServidor) return core.ui.alert('Erro', 'Busque um servidor.', 'erro');
-
-        if((await core.api('salvarRemessaOutroBanco', d))?.success) { 
-            core.ui.alert('Ok', 'Salvo', 'sucesso'); 
-            folha.carregarOutrosBancos(); 
-            folha.cancelarEdicaoOB(); 
-        }
+        if((await core.api('salvarRemessaOutroBanco', d))?.success) { core.ui.alert('Ok', 'Salvo', 'sucesso'); folha.carregarOutrosBancos(); folha.cancelarEdicaoOB(); }
     },
-
     carregarOutrosBancos: async () => {
         const comp = document.getElementById('filtroCompOutrosBancos').value;
         if(!comp) return;
         
+        // Garante Cache para KPI
         if (!store.cacheData['folhas']) await folha.carregarFolhas(true);
-        
         let totLiqGeral = 0;
         if(store.cacheData['folhas']) {
             store.cacheData['folhas'].forEach(f => {
-                if(core.fmt.toISOMonth(f[1]) === comp) {
-                    totLiqGeral += core.fmt.moneyParse(f[6]);
-                }
+                if(core.fmt.toISOMonth(f[1]) === comp) totLiqGeral += core.fmt.dbToFloat(f[6]); // Parser corrigido
             });
         }
         document.getElementById('kpiFolhaLiquida').innerText = core.fmt.money(totLiqGeral);
 
-        const lista = await core.api('buscarRemessasOutrosBancos', comp, true); // Silent
+        const lista = await core.api('buscarRemessasOutrosBancos', comp, true); 
         const tb = document.getElementById('listaOutrosBancos');
         tb.innerHTML = '';
         let totOutros = 0;
@@ -499,7 +485,7 @@ const folha = {
         if(lista && lista.length) {
             document.getElementById('contadorRemessas').innerText = `${lista.length} registros`;
             lista.forEach(r => {
-                const val = core.fmt.moneyParse(r[7]);
+                const val = core.fmt.dbToFloat(r[7]); // Parser corrigido
                 totOutros += val;
                 const nomeSafe = String(r[4]).replace(/'/g, "\\'");
                 const obsSafe = String(r[8]||'').replace(/'/g, "\\'");
@@ -508,10 +494,7 @@ const folha = {
                     <td class="pl-5 py-3"><div class="font-bold text-slate-700 text-xs">${r[4]}</div><div class="text-[10px] text-slate-400 font-mono">${r[5]}</div></td>
                     <td class="px-4 py-3 text-xs text-slate-600">${r[6]}</td>
                     <td class="px-4 py-3 text-right font-mono text-xs font-bold text-indigo-700">${core.fmt.money(val)}</td>
-                    <td class="pr-5 py-3 text-center">
-                        <button onclick="folha.prepOB('${r[0]}','${r[3]}','${nomeSafe}','${r[5]}','${r[6]}','${core.fmt.money(val)}','${obsSafe}')" class="text-blue-500 mr-2"><i class="fa-solid fa-pencil"></i></button>
-                        <button onclick="folha.delOB('${r[0]}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
-                    </td>
+                    <td class="pr-5 py-3 text-center"><button onclick="folha.prepOB('${r[0]}','${r[3]}','${nomeSafe}','${r[5]}','${r[6]}','${core.fmt.money(val)}','${obsSafe}')" class="text-blue-500 mr-2"><i class="fa-solid fa-pencil"></i></button><button onclick="folha.delOB('${r[0]}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>`;
             });
         } else {
@@ -521,33 +504,12 @@ const folha = {
         document.getElementById('kpiOutrosBancos').innerText = core.fmt.money(totOutros);
         document.getElementById('kpiBancoPrincipal').innerText = core.fmt.money(totLiqGeral - totOutros);
     },
-
-    prepOB: (id, ids, n, c, b, v, o) => {
-        folha.selServ(ids, n, c);
-        document.getElementById('idRemessaEdicao').value = id;
-        document.getElementById('selectBancoOB').value = b;
-        document.getElementById('valorOB').value = v; 
-        document.getElementById('obsOB').value = o;
-        document.getElementById('btnSalvarOB').innerHTML = '<i class="fa-solid fa-save"></i> Atualizar';
-        document.getElementById('btnCancelOB').classList.remove('hidden');
-    },
-
-    cancelarEdicaoOB: () => {
-        document.getElementById('formOutrosBancos').reset();
-        document.getElementById('idRemessaEdicao').value = '';
-        document.getElementById('detalhesServidorOB').classList.add('hidden');
-        document.getElementById('btnSalvarOB').innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar';
-        document.getElementById('btnCancelOB').classList.add('hidden');
-    },
-
-    delOB: (id) => core.ui.confirm('Excluir', 'Remover esta remessa?', async()=>{ if((await core.api('excluirRemessaOutroBanco', id))?.success) folha.carregarOutrosBancos(); }),
-
-    importarMesAnterior: () => {
-        core.ui.confirm('Importar', 'Copiar remessas do mês passado?', async()=>{
-            if((await core.api('importarRemessasAnteriores', document.getElementById('filtroCompOutrosBancos').value))?.success) folha.carregarOutrosBancos();
-        });
-    },
-
+    prepOB: (id, ids, n, c, b, v, o) => { folha.selServ(ids, n, c); document.getElementById('idRemessaEdicao').value = id; document.getElementById('selectBancoOB').value = b; document.getElementById('valorOB').value = v; document.getElementById('obsOB').value = o; document.getElementById('btnSalvarOB').innerHTML = '<i class="fa-solid fa-save"></i> Atualizar'; document.getElementById('btnCancelOB').classList.remove('hidden'); },
+    cancelarEdicaoOB: () => { document.getElementById('formOutrosBancos').reset(); document.getElementById('idRemessaEdicao').value = ''; document.getElementById('detalhesServidorOB').classList.add('hidden'); document.getElementById('btnSalvarOB').innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar'; document.getElementById('btnCancelOB').classList.add('hidden'); },
+    delOB: (id) => core.ui.confirm('Excluir', 'Remover?', async()=>{ if((await core.api('excluirRemessaOutroBanco', id))?.success) folha.carregarOutrosBancos(); }),
+    importarMesAnterior: () => { core.ui.confirm('Importar', 'Copiar do mês passado?', async()=>{ if((await core.api('importarRemessasAnteriores', document.getElementById('filtroCompOutrosBancos').value))?.success) folha.carregarOutrosBancos(); }); },
+    
+    // --- RELATÓRIOS ---
     renderizarRelatorio: () => {
         const tb = document.getElementById('tabelaRelatorioAnual');
         tb.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-slate-400">Gerando matriz...</td></tr>';
@@ -560,8 +522,6 @@ const folha = {
         }
 
         const ano = sel.value;
-        
-        // Verifica se há dados no cache, senão busca
         const processar = (list) => {
              const m = Array.from({length:12}, (_,i)=>({nome: new Date(0,i).toLocaleString('pt-BR',{month:'long'}), b:0, d:0}));
              list.forEach(r => {
@@ -569,8 +529,8 @@ const folha = {
                 if(comp.startsWith(ano)) {
                     const idx = parseInt(comp.split('-')[1]) - 1;
                     if(idx>=0 && idx<=11) {
-                        m[idx].b += core.fmt.moneyParse(r[4]);
-                        m[idx].d += core.fmt.moneyParse(r[5]);
+                        m[idx].b += core.fmt.dbToFloat(r[4]);
+                        m[idx].d += core.fmt.dbToFloat(r[5]);
                     }
                 }
             });
@@ -592,9 +552,7 @@ const folha = {
 };
 
 // --- PLACEHOLDERS ---
-const financeiro = { init: ()=>{} }; 
-const config = { carregar:()=>{} };
-const arquivos = {}; const irrf = {}; const previdencia = {}; const margem = {}; const consignados = {}; const despesas = {}; const importacao = {}; const relatorios = { carregarCabecalho:()=>{} };
+const financeiro = { init: ()=>{} }; const config = { carregar:()=>{} }; const arquivos = {}; const irrf = {}; const previdencia = {}; const margem = {}; const consignados = {}; const despesas = {}; const importacao = {}; const relatorios = { carregarCabecalho:()=>{} };
 
 // --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -616,4 +574,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if(typeof router !== 'undefined') router.loadModule('home');
+    setTimeout(() => folha.carregarCacheServidores(), 2000);
 });
