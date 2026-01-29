@@ -1,7 +1,7 @@
 /**
- * SISTEMA RPPS - ENGINE V3.2 (FIX CALC & KPI)
+ * SISTEMA RPPS - ENGINE V3.3 (FIX MATH & SEARCH)
  * Arquivo: app.js
- * Correções: Cálculo automático da folha e KPIs de Outros Bancos.
+ * Correções: Cálculo preciso da folha e busca local de servidores.
  */
 
 // ============================================================================
@@ -14,8 +14,8 @@ const API_TOKEN = "TOKEN_SECRETO_RPPS_2026";
 // 2. CORE: COMUNICAÇÃO E UTILITÁRIOS
 // ============================================================================
 const core = {
-    api: async (action, payload = {}) => {
-        core.ui.toggleLoading(true);
+    api: async (action, payload = {}, silent = false) => {
+        if(!silent) core.ui.toggleLoading(true);
         try {
             const response = await fetch(API_URL, {
                 method: "POST", redirect: "follow",
@@ -25,7 +25,7 @@ const core = {
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            core.ui.toggleLoading(false);
+            if(!silent) core.ui.toggleLoading(false);
             
             if (!data) return null;
             if (data.success === false) { 
@@ -34,7 +34,7 @@ const core = {
             }
             return data; 
         } catch (error) {
-            core.ui.toggleLoading(false);
+            if(!silent) core.ui.toggleLoading(false);
             console.error("API Error:", error);
             if (action !== 'buscarConfiguracoes') { 
                  core.ui.alert('Erro de Conexão', "Falha ao contactar servidor.\nVerifique a internet.", 'erro');
@@ -86,15 +86,13 @@ const core = {
     fmt: {
         money: (v) => (Number(v)||0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"}),
         
-        // CORREÇÃO CRÍTICA: Parsing agressivo para garantir cálculo correto
+        // CORREÇÃO: Parsing baseado na máscara (remove tudo que não é dígito e divide por 100)
         moneyParse: (v) => { 
             if (typeof v === 'number') return v;
             if (!v) return 0;
-            // Remove tudo que não for número ou vírgula ou sinal negativo
-            let s = String(v).replace(/[^\d,-]/g, '');
-            // Troca vírgula por ponto para o JS entender
-            s = s.replace(',', '.');
-            return parseFloat(s) || 0;
+            // Remove tudo exceto números e sinal de menos
+            let s = String(v).replace(/[^\d-]/g, '');
+            return (parseFloat(s) / 100) || 0;
         },
         
         round: (v) => Math.round(v * 100) / 100,
@@ -116,25 +114,19 @@ const core = {
             return s;
         },
 
-        // NOVA FUNÇÃO: Normaliza qualquer formato de competência para YYYY-MM
         toISOMonth: (val) => {
             if(!val) return "";
             let s = String(val).replace(/'/g, "").trim();
-            
-            // Se já for YYYY-MM
             if(s.match(/^\d{4}-\d{2}$/)) return s;
-            
-            // Se for DD/MM/YYYY ou MM/YYYY ou YYYY-MM-DD
             if(s.includes('/') || s.includes('-')) {
                 const date = new Date(s);
                 if(!isNaN(date.getTime())) {
-                     // Cuidado com timezone, usa UTC
                      const y = date.getFullYear();
                      const m = String(date.getMonth() + 1).padStart(2, '0');
                      return `${y}-${m}`;
                 }
             }
-            return s.substring(0, 7); // Fallback
+            return s.substring(0, 7); 
         }
     },
     utils: {
@@ -249,6 +241,8 @@ const dashboard = {
 
 // --- FOLHA DE PAGAMENTO ---
 const folha = {
+    servidoresCache: [], // CORREÇÃO: Cache local para busca instantânea
+
     switchView: (v) => {
         ['operacional', 'outros-bancos', 'gerencial'].forEach(id => {
             const el = document.getElementById(`view-folha-${id}`);
@@ -268,6 +262,9 @@ const folha = {
              folha.carregarFolhas();
         } else if (v === 'outros-bancos') {
              folha.carregarOutrosBancos();
+             // CORREÇÃO: Carrega cache de servidores UMA VEZ
+             if(folha.servidoresCache.length === 0) folha.carregarCacheServidores();
+             
              const inp = document.getElementById('filtroCompOutrosBancos');
              if(inp && !inp.value) inp.value = new Date().toISOString().substring(0,7);
         } else {
@@ -286,7 +283,7 @@ const folha = {
         }
     },
 
-    // CORREÇÃO: Cálculo agora usa o parser robusto
+    // CORREÇÃO: Usa o novo parser seguro
     calcularLiquido: () => {
         const b = core.fmt.moneyParse(document.getElementById('folhaBruto').value);
         const d = core.fmt.moneyParse(document.getElementById('folhaDescontos').value);
@@ -329,7 +326,6 @@ const folha = {
             let contador = 0;
             list.forEach(r => {
                 const compRow = String(r[1]).replace(/'/g, "");
-                // Normalização para comparar filtro corretamente
                 if(filtro && core.fmt.toISOMonth(compRow) !== filtro) return;
 
                 contador++;
@@ -346,7 +342,7 @@ const folha = {
                     <td class="px-4 py-4 text-right text-red-500 font-mono">-${core.fmt.money(d)}</td>
                     <td class="px-4 py-4 text-right font-black text-slate-800 bg-slate-50/30 font-mono">${core.fmt.money(l)}</td>
                     <td class="pr-8 py-4 text-center">
-                        <button onclick="folha.prepararEdicao('${r[0]}','${compRow}','${r[3]}','${b}','${d}','${obs}')" class="text-amber-600 hover:bg-amber-50 p-2 rounded mr-1"><i class="fa-solid fa-pencil"></i></button>
+                        <button onclick="folha.prepararEdicao('${r[0]}','${compRow}','${r[3]}','${core.fmt.money(b)}','${core.fmt.money(d)}','${obs}')" class="text-amber-600 hover:bg-amber-50 p-2 rounded mr-1"><i class="fa-solid fa-pencil"></i></button>
                         <button onclick="folha.excluir('${r[0]}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -367,8 +363,8 @@ const folha = {
         document.getElementById('idFolhaEdicao').value = id;
         document.getElementById('inputCompetenciaFolha').value = core.fmt.toISOMonth(c);
         document.getElementById('selectTipoFolha').value = t;
-        document.getElementById('folhaBruto').value = core.fmt.money(b);
-        document.getElementById('folhaDescontos').value = core.fmt.money(d);
+        document.getElementById('folhaBruto').value = b; // Já vem formatado
+        document.getElementById('folhaDescontos').value = d; // Já vem formatado
         document.getElementById('inputObsFolha').value = o;
         folha.calcularLiquido();
         document.getElementById('btnSalvarFolha').innerHTML = '<i class="fa-solid fa-save mr-2"></i> Atualizar';
@@ -397,17 +393,34 @@ const folha = {
     },
 
     // --- ABA OUTROS BANCOS ---
+    
+    // CORREÇÃO: Carrega cache de servidores (Silent Mode)
+    carregarCacheServidores: async () => {
+        const lista = await core.api('buscarTodosServidores', {}, true); // true = silent loading
+        if (lista) folha.servidoresCache = lista;
+    },
+
+    // CORREÇÃO: Busca local instantânea
     buscarServidor: (input) => {
-        const termo = input.value;
-        if(termo.length < 3) return;
-        core.api('buscarTodosServidores').then(lista => {
-             const div = document.getElementById('listaSugestoesOB');
-             div.innerHTML = '';
-             div.style.display = 'block';
-             lista.filter(s => s[1].toLowerCase().includes(termo.toLowerCase())).forEach(s => {
-                 div.innerHTML += `<div class="autocomplete-item p-2 hover:bg-slate-50 cursor-pointer border-b" onclick="folha.selServ('${s[0]}','${s[1]}','${s[2]}')"><strong>${s[1]}</strong><br><span class="text-xs text-gray-500">${s[2]}</span></div>`;
-             });
-        });
+        const termo = input.value.toLowerCase();
+        const div = document.getElementById('listaSugestoesOB');
+        
+        if(termo.length < 2) {
+            div.style.display = 'none';
+            return;
+        }
+
+        div.innerHTML = '';
+        const resultados = folha.servidoresCache.filter(s => s[1].toLowerCase().includes(termo));
+
+        if (resultados.length > 0) {
+            div.style.display = 'block';
+            resultados.slice(0, 10).forEach(s => { // Limita a 10 sugestões
+                 div.innerHTML += `<div class="autocomplete-item p-2 hover:bg-slate-50 cursor-pointer border-b text-sm" onclick="folha.selServ('${s[0]}','${s[1]}','${s[2]}')"><strong>${s[1]}</strong><br><span class="text-xs text-gray-500">${s[2]}</span></div>`;
+            });
+        } else {
+            div.style.display = 'none';
+        }
     },
 
     selServ: (id, nome, cpf) => {
@@ -448,12 +461,10 @@ const folha = {
         if(!comp) return;
         
         // CORREÇÃO CRÍTICA PARA KPIS: Normalização de Datas
-        // Agora compara YYYY-MM com YYYY-MM
-        const folhas = await core.api('buscarFolhas');
+        const folhas = await core.api('buscarFolhas', {}, true); // Silent
         let totLiqGeral = 0;
         if(folhas) {
             folhas.forEach(f => {
-                // toISOMonth converte qualquer formato vindo da planilha para '2026-01'
                 if(core.fmt.toISOMonth(f[1]) === comp) {
                     totLiqGeral += core.fmt.moneyParse(f[6]);
                 }
@@ -481,7 +492,7 @@ const folha = {
                     <td class="px-4 py-3 text-xs text-slate-600">${r[6]}</td>
                     <td class="px-4 py-3 text-right font-mono text-xs font-bold text-indigo-700">${core.fmt.money(val)}</td>
                     <td class="pr-5 py-3 text-center">
-                        <button onclick="folha.prepOB('${r[0]}','${r[3]}','${nomeSafe}','${r[5]}','${r[6]}','${val}','${obsSafe}')" class="text-blue-500 mr-2"><i class="fa-solid fa-pencil"></i></button>
+                        <button onclick="folha.prepOB('${r[0]}','${r[3]}','${nomeSafe}','${r[5]}','${r[6]}','${core.fmt.money(val)}','${obsSafe}')" class="text-blue-500 mr-2"><i class="fa-solid fa-pencil"></i></button>
                         <button onclick="folha.delOB('${r[0]}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -498,7 +509,7 @@ const folha = {
         folha.selServ(ids, n, c);
         document.getElementById('idRemessaEdicao').value = id;
         document.getElementById('selectBancoOB').value = b;
-        document.getElementById('valorOB').value = core.fmt.money(v);
+        document.getElementById('valorOB').value = v; // Já vem formatado
         document.getElementById('obsOB').value = o;
         document.getElementById('btnSalvarOB').innerHTML = '<i class="fa-solid fa-save"></i> Atualizar';
         document.getElementById('btnCancelOB').classList.remove('hidden');
