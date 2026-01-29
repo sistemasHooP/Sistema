@@ -1,7 +1,7 @@
 /**
- * SISTEMA RPPS - ENGINE V3.1 (MODULAR & ROBUSTO)
+ * SISTEMA RPPS - ENGINE V3.2 (FIX CALC & KPI)
  * Arquivo: app.js
- * Responsabilidade: Controlar navegação, API e regras de negócio.
+ * Correções: Cálculo automático da folha e KPIs de Outros Bancos.
  */
 
 // ============================================================================
@@ -36,7 +36,7 @@ const core = {
         } catch (error) {
             core.ui.toggleLoading(false);
             console.error("API Error:", error);
-            if (action !== 'buscarConfiguracoes') { // Evita spam no load inicial
+            if (action !== 'buscarConfiguracoes') { 
                  core.ui.alert('Erro de Conexão', "Falha ao contactar servidor.\nVerifique a internet.", 'erro');
             }
             return null;
@@ -85,15 +85,64 @@ const core = {
     },
     fmt: {
         money: (v) => (Number(v)||0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"}),
-        moneyParse: (v) => { if(typeof v==='number')return v; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; },
-        dateBR: (d) => { if(!d)return'-'; const dt=new Date(d); return isNaN(dt)?String(d).substr(0,10):new Date(dt.getTime()+dt.getTimezoneOffset()*60000).toLocaleDateString('pt-BR'); },
-        comp: (c) => { if(!c)return'-'; const s=String(c).replace(/'/g,""); const p=s.split('-'); return p.length===2?`${p[1]}/${p[0]}`:s; },
-        round: (v) => Math.round(v*100)/100
+        
+        // CORREÇÃO CRÍTICA: Parsing agressivo para garantir cálculo correto
+        moneyParse: (v) => { 
+            if (typeof v === 'number') return v;
+            if (!v) return 0;
+            // Remove tudo que não for número ou vírgula ou sinal negativo
+            let s = String(v).replace(/[^\d,-]/g, '');
+            // Troca vírgula por ponto para o JS entender
+            s = s.replace(',', '.');
+            return parseFloat(s) || 0;
+        },
+        
+        round: (v) => Math.round(v * 100) / 100,
+        
+        dateBR: (d) => {
+            if (!d) return '-';
+            const dt = new Date(d);
+            if (isNaN(dt.getTime())) return String(d).substring(0, 10);
+            const userTimezoneOffset = dt.getTimezoneOffset() * 60000;
+            const adjustedDate = new Date(dt.getTime() + userTimezoneOffset);
+            return adjustedDate.toLocaleDateString('pt-BR');
+        },
+        
+        comp: (c) => { 
+            if(!c) return '-';
+            const s = String(c).replace(/'/g,"");
+            const p = s.split('-');
+            if(p.length === 2) return `${p[1]}/${p[0]}`; 
+            return s;
+        },
+
+        // NOVA FUNÇÃO: Normaliza qualquer formato de competência para YYYY-MM
+        toISOMonth: (val) => {
+            if(!val) return "";
+            let s = String(val).replace(/'/g, "").trim();
+            
+            // Se já for YYYY-MM
+            if(s.match(/^\d{4}-\d{2}$/)) return s;
+            
+            // Se for DD/MM/YYYY ou MM/YYYY ou YYYY-MM-DD
+            if(s.includes('/') || s.includes('-')) {
+                const date = new Date(s);
+                if(!isNaN(date.getTime())) {
+                     // Cuidado com timezone, usa UTC
+                     const y = date.getFullYear();
+                     const m = String(date.getMonth() + 1).padStart(2, '0');
+                     return `${y}-${m}`;
+                }
+            }
+            return s.substring(0, 7); // Fallback
+        }
     },
     utils: {
         applyMasks: () => {
             document.querySelectorAll('.mask-money').forEach(i => i.addEventListener('input', e => {
-                let v = e.target.value.replace(/\D/g,""); e.target.value = (Number(v)/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+                let v = e.target.value.replace(/\D/g, "");
+                v = (Number(v) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                e.target.value = v;
             }));
         },
         initInputs: () => {
@@ -120,25 +169,20 @@ const router = {
             const html = await response.text();
             container.innerHTML = html;
 
-            // Atualiza Menu
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             const btn = document.querySelector(`button[data-target="${moduleName}"]`);
             if(btn) btn.classList.add('active');
             
-            // Títulos
             const titles = { 'home':'Início', 'folha':'Folha de Pagamento', 'recolhimento':'Receitas', 'financeiro':'Financeiro', 'gestao':'Gestão' };
             const pageTitle = document.getElementById('page-title');
             if(pageTitle) pageTitle.innerText = titles[moduleName] || 'Sistema RPPS';
 
-            // Inicializações específicas
             if (moduleName === 'home') dashboard.init();
             if (moduleName === 'folha') {
                 folha.switchView('operacional');
                 core.utils.applyMasks();
                 core.utils.initInputs();
             }
-            // Adicione outros módulos conforme for criando os HTMLs
-
         } catch (e) {
             console.warn(e);
             container.innerHTML = `
@@ -152,7 +196,7 @@ const router = {
 };
 
 // ============================================================================
-// 4. MÓDULOS DE NEGÓCIO (DEFINIÇÃO COMPLETA)
+// 4. MÓDULOS DE NEGÓCIO (CORRIGIDOS)
 // ============================================================================
 
 // --- DASHBOARD (HOME) ---
@@ -173,7 +217,6 @@ const dashboard = {
     popularFiltros: () => {
         const s = document.getElementById('biAno'); if(!s) return;
         const y = new Date().getFullYear();
-        // Lógica simplificada para popular select se houver dados
         const set = new Set([y]);
         if(dashboard.dataCache && dashboard.dataCache.folhas) {
             dashboard.dataCache.folhas.forEach(f => { if(f.competencia) set.add(parseInt(f.competencia.substr(0,4))); });
@@ -184,18 +227,14 @@ const dashboard = {
     atualizarGrafico: () => {
         const ctx = document.getElementById('chartFinanceiro');
         if(!ctx || !dashboard.dataCache) return;
-        
-        // Mock rápido se não houver dados complexos processados ainda
         const ano = document.getElementById('biAno').value;
         const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-        // Lógica real de soma:
         const dadosFolha = Array(12).fill(0);
         if(dashboard.dataCache.folhas) {
              dashboard.dataCache.folhas.forEach(f => {
                  if(f.competencia.startsWith(ano)) dadosFolha[parseInt(f.competencia.split('-')[1])-1] += f.liquido;
              });
         }
-
         if(dashboard.chart) dashboard.chart.destroy();
         dashboard.chart = new Chart(ctx, {
             type: 'bar',
@@ -247,6 +286,7 @@ const folha = {
         }
     },
 
+    // CORREÇÃO: Cálculo agora usa o parser robusto
     calcularLiquido: () => {
         const b = core.fmt.moneyParse(document.getElementById('folhaBruto').value);
         const d = core.fmt.moneyParse(document.getElementById('folhaDescontos').value);
@@ -289,7 +329,8 @@ const folha = {
             let contador = 0;
             list.forEach(r => {
                 const compRow = String(r[1]).replace(/'/g, "");
-                if(filtro && compRow !== filtro) return;
+                // Normalização para comparar filtro corretamente
+                if(filtro && core.fmt.toISOMonth(compRow) !== filtro) return;
 
                 contador++;
                 const b=core.fmt.moneyParse(r[4]); const d=core.fmt.moneyParse(r[5]); const l=core.fmt.moneyParse(r[6]);
@@ -324,7 +365,7 @@ const folha = {
 
     prepararEdicao: (id, c, t, b, d, o) => {
         document.getElementById('idFolhaEdicao').value = id;
-        document.getElementById('inputCompetenciaFolha').value = c;
+        document.getElementById('inputCompetenciaFolha').value = core.fmt.toISOMonth(c);
         document.getElementById('selectTipoFolha').value = t;
         document.getElementById('folhaBruto').value = core.fmt.money(b);
         document.getElementById('folhaDescontos').value = core.fmt.money(d);
@@ -406,8 +447,19 @@ const folha = {
         const comp = document.getElementById('filtroCompOutrosBancos').value;
         if(!comp) return;
         
-        // KPIs (simplificado para demonstração)
-        document.getElementById('kpiFolhaLiquida').innerText = "R$ ..."; 
+        // CORREÇÃO CRÍTICA PARA KPIS: Normalização de Datas
+        // Agora compara YYYY-MM com YYYY-MM
+        const folhas = await core.api('buscarFolhas');
+        let totLiqGeral = 0;
+        if(folhas) {
+            folhas.forEach(f => {
+                // toISOMonth converte qualquer formato vindo da planilha para '2026-01'
+                if(core.fmt.toISOMonth(f[1]) === comp) {
+                    totLiqGeral += core.fmt.moneyParse(f[6]);
+                }
+            });
+        }
+        document.getElementById('kpiFolhaLiquida').innerText = core.fmt.money(totLiqGeral);
 
         const lista = await core.api('buscarRemessasOutrosBancos', comp);
         const tb = document.getElementById('listaOutrosBancos');
@@ -439,6 +491,7 @@ const folha = {
             tb.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Nenhuma remessa nesta competência.</td></tr>';
         }
         document.getElementById('kpiOutrosBancos').innerText = core.fmt.money(totOutros);
+        document.getElementById('kpiBancoPrincipal').innerText = core.fmt.money(totLiqGeral - totOutros);
     },
 
     prepOB: (id, ids, n, c, b, v, o) => {
