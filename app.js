@@ -1,7 +1,6 @@
 /**
- * SISTEMA RPPS - ENGINE V3.6 (FIX MATH & OPTIMISTIC UI)
+ * SISTEMA RPPS - ENGINE V3.7 (STABLE MATH & UI)
  * Arquivo: app.js
- * Correções: Funções de parsing financeiro separadas (Input vs DB) e Salvamento Instantâneo.
  */
 
 // ============================================================================
@@ -46,13 +45,17 @@ const core = {
         alert: (t, m, tp='info') => {
             const el = document.getElementById('sys-modal-alert');
             if(!el) return alert(`${t}\n\n${m}`);
+            
             document.getElementById('sys-modal-title').innerText = t;
             document.getElementById('sys-modal-desc').innerHTML = m;
-            const bg = document.getElementById('sys-icon-bg');
-            const icon = document.getElementById('sys-icon-i');
-            bg.className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 " + (tp==='erro'?'bg-red-100':tp==='sucesso'?'bg-green-100':'bg-blue-100');
-            icon.className = "fa-solid text-lg " + (tp==='erro'?'fa-triangle-exclamation text-red-600':tp==='sucesso'?'fa-check text-green-600':'fa-info text-blue-600');
+            
+            const iconBg = document.getElementById('sys-icon-bg');
+            const iconI = document.getElementById('sys-icon-i');
+            
+            iconBg.className = "mx-auto flex h-12 w-12 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 " + (tp==='erro'?'bg-red-100':tp==='sucesso'?'bg-green-100':'bg-blue-100');
+            iconI.className = "fa-solid text-lg " + (tp==='erro'?'fa-triangle-exclamation text-red-600':tp==='sucesso'?'fa-check text-green-600':'fa-info text-blue-600');
             document.getElementById('sys-modal-actions').innerHTML = `<button onclick="core.ui.closeAlert()" class="btn-primary w-full sm:w-auto bg-slate-800 text-white px-4 py-2 rounded">OK</button>`;
+            
             el.classList.remove('hidden');
         },
         confirm: (t, m, cb) => {
@@ -68,7 +71,7 @@ const core = {
     fmt: {
         money: (v) => (Number(v)||0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"}),
         
-        // CORREÇÃO: Parser EXCLUSIVO para Inputs com Máscara (Divide por 100)
+        // PARA INPUTS (Com máscara): Remove tudo e divide por 100
         inputToFloat: (v) => { 
             if (typeof v === 'number') return v;
             if (!v) return 0;
@@ -76,14 +79,18 @@ const core = {
             return (parseFloat(s) / 100) || 0;
         },
 
-        // CORREÇÃO: Parser EXCLUSIVO para Dados do Banco (Respeita pontuação BR)
+        // PARA BANCO DE DADOS: Remove formatação BR e converte (NÃO divide por 100)
         dbToFloat: (v) => {
             if (typeof v === 'number') return v;
             if (!v) return 0;
-            // Remove R$, espaços e pontos de milhar, troca vírgula por ponto
-            let s = String(v).replace(/R\$|\s|\./g, '').replace(',', '.');
+            // Remove R$, espaços e pontos de milhar
+            let s = String(v).replace(/R\$|\s|\./g, '');
+            // Substitui vírgula decimal por ponto
+            s = s.replace(',', '.');
             return parseFloat(s) || 0;
         },
+        
+        round: (v) => Math.round(v * 100) / 100,
         
         dateBR: (d) => {
             if (!d) return '-';
@@ -192,7 +199,7 @@ const dashboard = {
         const y = new Date().getFullYear();
         s.innerHTML = `<option value="${y}">${y}</option><option value="${y-1}">${y-1}</option>`;
     },
-    atualizarGrafico: () => { /* ... Manter Lógica Gráfico ... */ }
+    atualizarGrafico: () => { /* Gráfico aqui... */ }
 };
 
 // --- FOLHA DE PAGAMENTO ---
@@ -247,7 +254,6 @@ const folha = {
         }
     },
 
-    // USO DO NOVO PARSER PARA CÁLCULO
     calcularLiquido: () => {
         const b = core.fmt.inputToFloat(document.getElementById('folhaBruto').value);
         const d = core.fmt.inputToFloat(document.getElementById('folhaDescontos').value);
@@ -262,7 +268,6 @@ const folha = {
     handleSave: async (e) => {
         e.preventDefault(); const f=e.target;
         
-        // Dados para a UI Otimista e para o Backend
         const brutoRaw = f.valorBruto.value;
         const descRaw = f.valorDescontos.value;
         const comp = f.competencia.value;
@@ -270,17 +275,14 @@ const folha = {
         const obs = f.observacoes.value;
         const idEdicao = document.getElementById('idFolhaEdicao').value;
 
-        // Confirmação rápida
         if(!confirm('Deseja salvar esta folha?')) return;
 
-        // 1. ATUALIZAÇÃO OTIMISTA (Instantânea na tela)
-        // Adiciona um item temporário na tabela enquanto salva
+        // UI Otimista
         const tb = document.getElementById('listaFolhas');
         const bVal = core.fmt.inputToFloat(brutoRaw);
         const dVal = core.fmt.inputToFloat(descRaw);
         const lVal = bVal - dVal;
         
-        // Cria linha temporária
         const tempRow = document.createElement('tr');
         tempRow.className = "bg-green-50 animate-pulse border-b";
         tempRow.innerHTML = `
@@ -293,39 +295,38 @@ const folha = {
         `;
         if(tb.firstChild) tb.insertBefore(tempRow, tb.firstChild);
         
-        // Limpa formulário imediatamente para dar sensação de rapidez
         folha.cancelarEdicao();
 
-        // 2. ENVIO PARA O BACKEND
         const d = {
             id: idEdicao,
             competencia: comp, tipoFolha: tipo,
             valorBruto: brutoRaw, valorDescontos: descRaw, observacoes: obs
         };
 
-        // Envia silenciosamente (sem bloquear tela)
+        // Salva e Recarrega em Background (silent = true)
         const res = await core.api('salvarFolha', d, true); 
         
         if(res?.success) {
-            // Sucesso: Atualiza cache real e recarrega tabela oficial
             store.invalidate('folhas');
-            folha.limparFiltro(); // Isso recarrega a tabela completa
+            // Recarrega em SILÊNCIO (true) para não travar a tela
+            folha.carregarFolhas(true, true); 
         } else {
-            // Erro: Remove linha temporária e avisa
             tempRow.remove();
             core.ui.alert('Erro', res?.message || 'Falha ao salvar', 'erro');
         }
     },
 
-    carregarFolhas: async (forceRefresh = false) => {
+    // Arg 2 (silent) adicionado para evitar spinner branco
+    carregarFolhas: async (forceRefresh = false, silent = false) => {
         const tb = document.getElementById('listaFolhas');
         if(!tb) return;
         
         let list = store.cacheData['folhas'];
 
         if (!list || forceRefresh) {
-            if(!forceRefresh) tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-400 italic">Carregando...</td></tr>';
-            list = await core.api('buscarFolhas', {}, !forceRefresh); 
+            if(!forceRefresh && !silent) tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-400 italic">Carregando...</td></tr>';
+            // Chama API. Se silent=true, não mostra spinner
+            list = await core.api('buscarFolhas', {}, silent); 
             if (list) store.cacheData['folhas'] = list;
         }
         
@@ -345,7 +346,7 @@ const folha = {
                 if(filtro && core.fmt.toISOMonth(compRow) !== filtro) return;
 
                 contador++;
-                // USO DO NOVO PARSER DE BANCO (dbToFloat)
+                // USE dbToFloat HERE for values from Database
                 const b=core.fmt.dbToFloat(r[4]); 
                 const d=core.fmt.dbToFloat(r[5]); 
                 const l=core.fmt.dbToFloat(r[6]);
@@ -400,12 +401,8 @@ const folha = {
 
     excluir: (id) => {
         core.ui.confirm('Excluir', 'Apagar registro permanentemente?', async () => {
-             // Invalida cache local para forçar atualização
-             store.invalidate('folhas');
-             // Remove da interface visualmente (opcional, mas bom pra UX)
-             folha.renderizarTabelaFolhas([]); 
-             
              if((await core.api('excluirFolha', id))?.success) {
+                 store.invalidate('folhas');
                  folha.carregarFolhas(true);
              }
         });
@@ -413,7 +410,7 @@ const folha = {
 
     limparFiltro: () => {
         document.getElementById('filtroHistoricoFolha').value = '';
-        folha.carregarFolhas(true); // Força refresh ao limpar filtro
+        folha.carregarFolhas(true); 
     },
 
     // --- ABA OUTROS BANCOS ---
@@ -456,8 +453,6 @@ const folha = {
     },
     handleSaveOutrosBancos: async (e) => {
         e.preventDefault();
-        // Lógica de salvamento mantida
-        // ... (Mesmo código anterior para Outros Bancos) ...
         const d = { id: document.getElementById('idRemessaEdicao').value, competencia: document.getElementById('filtroCompOutrosBancos').value, idServidor: document.getElementById('idServidorOB').value, nomeServidor: document.getElementById('nomeServidorOB').value, cpf: document.getElementById('cpfServidorOB').value, banco: document.getElementById('selectBancoOB').value, valor: document.getElementById('valorOB').value, observacoes: document.getElementById('obsOB').value };
         if(!d.competencia) return core.ui.alert('Erro', 'Selecione a competência.', 'erro');
         if(!d.idServidor) return core.ui.alert('Erro', 'Busque um servidor.', 'erro');
@@ -467,12 +462,11 @@ const folha = {
         const comp = document.getElementById('filtroCompOutrosBancos').value;
         if(!comp) return;
         
-        // Garante Cache para KPI
-        if (!store.cacheData['folhas']) await folha.carregarFolhas(true);
+        if (!store.cacheData['folhas']) await folha.carregarFolhas(true, true);
         let totLiqGeral = 0;
         if(store.cacheData['folhas']) {
             store.cacheData['folhas'].forEach(f => {
-                if(core.fmt.toISOMonth(f[1]) === comp) totLiqGeral += core.fmt.dbToFloat(f[6]); // Parser corrigido
+                if(core.fmt.toISOMonth(f[1]) === comp) totLiqGeral += core.fmt.dbToFloat(f[6]); 
             });
         }
         document.getElementById('kpiFolhaLiquida').innerText = core.fmt.money(totLiqGeral);
@@ -485,7 +479,7 @@ const folha = {
         if(lista && lista.length) {
             document.getElementById('contadorRemessas').innerText = `${lista.length} registros`;
             lista.forEach(r => {
-                const val = core.fmt.dbToFloat(r[7]); // Parser corrigido
+                const val = core.fmt.dbToFloat(r[7]); 
                 totOutros += val;
                 const nomeSafe = String(r[4]).replace(/'/g, "\\'");
                 const obsSafe = String(r[8]||'').replace(/'/g, "\\'");
